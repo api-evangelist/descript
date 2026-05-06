@@ -1,0 +1,13 @@
+aid: descript
+url: https://raw.githubusercontent.com/api-evangelist/descript/refs/heads/main/apis.yml
+name: Descript
+type: Index
+image: https://kinlane-productions.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+description: 'Programmatic API to create projects, import media, and edit projects.'
+created: '2026-05-06'
+modified: '2026-05-06'
+specificationVersion: '0.19'
+tags:
+  - API
+url-source: https://docs.descriptapi.com/
+apis: []
