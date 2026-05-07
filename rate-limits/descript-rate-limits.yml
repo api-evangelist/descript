@@ -1,0 +1,74 @@
+specification: API Commons Rate Limits
+specificationVersion: '0.1'
+schema: https://raw.githubusercontent.com/api-evangelist/interface-research/main/schema/api-commons.yml#/$defs/RateLimits
+provider: Descript
+providerId: descript
+created: '2026-05-06'
+modified: '2026-05-06'
+reconciled: false
+tags:
+  - Rate Limiting
+  - Video Editing
+  - Audio Editing
+  - AI
+description: Descript's REST API enforces rate limits per API token (token is scoped to a Drive). When a client
+  exceeds a limit, the API returns 429 with a Retry-After header along with X-RateLimit-Remaining and
+  X-RateLimit-Consumed for client-side budgeting. Most documented limits are operational ceilings rather than
+  per-second numbers — the only published numeric ceiling at this time is 1,000 requests/hour per user against
+  the published-projects metadata endpoint. The API is in early access and exact per-token quotas may scale with
+  the Descript plan tier (Hobbyist / Creator / Business / Enterprise) and the underlying media-minute and AI-credit
+  budgets. reconciled false because per-second/per-minute thresholds are not publicly enumerated for the core
+  endpoints.
+sources:
+  - https://docs.descriptapi.com/
+  - https://docs.descriptapi.com/openapi.yaml
+  - https://help.descript.com/hc/en-us/articles/43370311322509-Descript-API-beta
+headers:
+  retryAfter: Retry-After
+  remaining: X-RateLimit-Remaining
+  consumed: X-RateLimit-Consumed
+responseCodes:
+  throttled: 429
+  insufficientCredits: 402
+limits:
+  - name: Published project metadata reads
+    scope: user
+    metric: requests_per_hour
+    limit: 1000
+    timeFrame: hour
+    notes: Documented hard cap on GET /v1/published_projects/{slug}; other endpoints share an undocumented per-token rate budget.
+  - name: Core REST API requests (per token)
+    scope: token
+    metric: varies
+    limit: 'see Retry-After / X-RateLimit-Remaining headers'
+    notes: Per-token allowances are not published as fixed RPS / RPM. Clients should respect Retry-After and back off when 429 is returned.
+  - name: Asynchronous job execution
+    scope: drive
+    metric: concurrent_jobs
+    limit: 'governed by drive plan and AI credit budget'
+    notes: Import / agent / publish jobs are queued and executed asynchronously. Parallelism and throughput are bounded by the plan's media-minute and AI-credit budgets rather than a fixed concurrency number.
+  - name: Direct upload signed URL TTL
+    scope: upload_url
+    metric: minutes
+    limit: 180
+    timeFrame: minute
+    notes: Upload URLs returned by /v1/jobs/import/project_media expire 3 hours after issuance.
+  - name: Edit-in-Descript import URL TTL
+    scope: import_url
+    metric: minutes
+    limit: 180
+    timeFrame: minute
+    notes: Partner import URLs from /v1/edit_in_descript/schema expire 3 hours after issuance.
+policies:
+  - name: Bearer authentication
+    description: All requests require an Authorization Bearer token created via Settings > API tokens. Tokens are scoped to a single Drive and inherit that user's permissions on the Drive.
+  - name: Retry-After honoring
+    description: When the API returns 429, clients must read Retry-After and wait at least that many seconds before retrying. Use exponential backoff if multiple 429s occur in a row.
+  - name: Header-driven budgeting
+    description: Use X-RateLimit-Remaining and X-RateLimit-Consumed to pre-emptively throttle client behavior; do not assume fixed per-minute caps.
+  - name: Asynchronous job model
+    description: Long-running operations (import / agent / publish) return a job_id immediately. Poll GET /v1/jobs/{job_id} or supply a callback_url for webhook delivery instead of holding HTTP connections open.
+  - name: Credit-based usage
+    description: 402 Insufficient Credits indicates the Drive's media-minute or AI-credit balance is exhausted; the limit is a plan budget, not a transient rate limit.
+  - name: Early access scope
+    description: The API is in early access (v1.2). Endpoints, request shapes, and limits may evolve; review the docs and changelog before relying on undocumented quotas.

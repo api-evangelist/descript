@@ -1,0 +1,95 @@
+specification: FinOps Framework
+specificationVersion: '1.0'
+schema: https://www.finops.org/framework/
+provider: Descript
+providerId: descript
+created: '2026-05-06'
+modified: '2026-05-06'
+reconciled: false
+tags:
+  - FinOps
+  - FOCUS
+  - Video Editing
+  - Audio Editing
+  - AI
+description: FOCUS-aligned FinOps view of Descript — a tiered SaaS subscription where consumption is metered in
+  AI credits and media (transcription) minutes drawn from a shared monthly bucket per Drive. API usage during
+  early access does not bill separately; it depletes the same media-minute and AI-credit pools as the in-app
+  editor. reconciled false because Descript does not yet publish a granular usage / billing API to back per-meter
+  reconciliation against FOCUS columns.
+sources:
+  - https://www.descript.com/pricing
+  - https://www.descript.com/api
+  - https://docs.descriptapi.com/
+  - https://help.descript.com/hc/en-us/articles/43370311322509-Descript-API-beta
+alignedWith:
+  framework: FinOps Foundation Framework
+  frameworkUrl: https://www.finops.org/framework/
+  dataSpec: FOCUS
+  dataSpecVersion: '1.3'
+  dataSpecUrl: https://focus.finops.org/focus-specification/v1-3/
+publisherName: Descript, Inc.
+serviceCategory: Media Editing
+billingModel:
+  pricingCategory: Tiered Subscription + Included AI Credits and Media Minutes
+  billingFrequency: Monthly or Annual
+  billingCurrency: USD
+  chargeCategories:
+    - Purchase
+    - Usage
+    - Tax
+focusColumns:
+  ServiceName: Descript
+  ServiceCategory: Media Editing
+  ServiceSubcategory: AI Video and Audio Editing
+  ProviderName: Descript
+  PublisherName: Descript, Inc.
+  InvoiceIssuerName: Descript, Inc.
+  BillingCurrency: USD
+  ChargeCategory: Purchase
+meters:
+  - name: subscription_seats
+    unit: seat-month
+    aggregation: max
+    dimensions:
+      - plan
+      - billing_cycle
+  - name: media_minutes_consumed
+    unit: minute
+    aggregation: sum
+    dimensions:
+      - drive
+      - source
+  - name: ai_credits_consumed
+    unit: credit
+    aggregation: sum
+    dimensions:
+      - feature
+      - drive
+      - underlord_action
+  - name: api_jobs_executed
+    unit: job
+    aggregation: sum
+    dimensions:
+      - job_type
+      - drive
+  - name: published_project_storage
+    unit: project
+    aggregation: max
+    dimensions:
+      - drive
+      - access_level
+  - name: translated_minutes
+    unit: minute
+    aggregation: sum
+    dimensions:
+      - target_language
+principles:
+  - name: Visibility
+    description: Track Drive-level media-minute and AI-credit burn from the Descript Settings > Usage view; correlate API consumption by listing jobs via GET /v1/jobs and inspecting media_seconds_used and ai_credits_used in job results.
+  - name: Allocation
+    description: Use one Drive per cost center or product line so plan seats, media minutes, and AI credits roll up to a single owner. Tag automation by giving each integration its own API token scoped to the Drive that should bear the cost.
+  - name: Optimization
+    description: Right-size plan tier to actual monthly transcription minutes; avoid wasted AI credits by batching Underlord prompts into one-shot agent calls rather than chained edits, and pre-trim source media before import. Switch to annual billing for up to 35% savings.
+  - name: Accountability
+    description: Designate a Drive admin to monitor usage, set alerts before media-minute or AI-credit thresholds are reached, and request top-ups during early access. Quarterly reviews should reconcile API job counts against perceived business value.

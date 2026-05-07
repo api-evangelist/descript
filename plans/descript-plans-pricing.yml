@@ -1,0 +1,237 @@
+specification: API Commons Plans
+specificationVersion: '0.1'
+schema: https://raw.githubusercontent.com/api-evangelist/interface-research/main/schema/api-commons.yml#/$defs/Plans
+provider: Descript
+providerId: descript
+created: '2026-05-06'
+modified: '2026-05-06'
+reconciled: false
+tags:
+  - Video Editing
+  - Audio Editing
+  - AI
+  - Transcription
+  - Media
+description: Descript prices the platform via tiered subscriptions (Free, Hobbyist, Creator, Business, Enterprise)
+  with each tier including a monthly allotment of media transcription minutes and AI credits used by Underlord-powered
+  features. API access is currently in early access and is included with paid plans at no additional cost — usage
+  draws from the same media-minutes and AI-credit pool as in-app editing. Annual billing saves up to 35% vs monthly.
+  reconciled false because exact API-vs-app credit attribution is not separately published.
+sources:
+  - https://www.descript.com/pricing
+  - https://www.descript.com/api
+  - https://docs.descriptapi.com/
+  - https://help.descript.com/hc/en-us/articles/43370311322509-Descript-API-beta
+plans:
+  - id: descript-free
+    name: Free
+    type: freemium
+    description: '$0; ~60 transcription minutes/month and 100 one-time AI credits, single seat.'
+    entries:
+      - label: Seat
+        name: seat
+        type: subscription
+        metric: seat
+        limit: 1
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: '0.00'
+        userMultiplied: false
+      - label: Transcription minutes
+        name: transcription_minutes
+        type: quota
+        metric: minute
+        limit: 60
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: '0.00'
+        userMultiplied: false
+      - label: AI credits (one-time)
+        name: ai_credits
+        type: quota
+        metric: credit
+        limit: 100
+        timeFrame: usage
+        geo: global
+        unit: 1
+        price: '0.00'
+        userMultiplied: false
+    elements:
+      - name: Watermarked exports
+      - name: Basic editing
+      - name: Underlord AI (limited)
+  - id: descript-hobbyist
+    name: Hobbyist
+    type: subscription
+    description: '$16/user/month annual ($24/month monthly); 600 minutes/mo, 400 AI credits/mo.'
+    entries:
+      - label: Seat (annual)
+        name: seat_annual
+        type: subscription
+        metric: seat
+        limit: 1
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: '16.00'
+        userMultiplied: true
+      - label: Seat (monthly)
+        name: seat_monthly
+        type: subscription
+        metric: seat
+        limit: 1
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: '24.00'
+        userMultiplied: true
+      - label: Transcription minutes
+        name: transcription_minutes
+        type: quota
+        metric: minute
+        limit: 600
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: included
+        userMultiplied: false
+      - label: AI credits
+        name: ai_credits
+        type: quota
+        metric: credit
+        limit: 400
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: included
+        userMultiplied: false
+    elements:
+      - name: 1080p export
+      - name: Multi-track recording
+      - name: 25-language transcription
+      - name: API access (early access)
+  - id: descript-creator
+    name: Creator
+    type: subscription
+    description: '$24/user/month annual ($35/month monthly); ~1,800 transcription minutes/mo + 35 bonus, 800 AI credits/mo + 500 bonus.'
+    entries:
+      - label: Seat (annual)
+        name: seat_annual
+        type: subscription
+        metric: seat
+        limit: 1
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: '24.00'
+        userMultiplied: true
+      - label: Seat (monthly)
+        name: seat_monthly
+        type: subscription
+        metric: seat
+        limit: 1
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: '35.00'
+        userMultiplied: true
+      - label: Transcription minutes
+        name: transcription_minutes
+        type: quota
+        metric: minute
+        limit: 1800
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: included
+        userMultiplied: false
+      - label: AI credits
+        name: ai_credits
+        type: quota
+        metric: credit
+        limit: 800
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: included
+        userMultiplied: false
+    elements:
+      - name: 4K export
+      - name: Full Underlord AI access
+      - name: Generate video
+      - name: Unlimited stock media library
+      - name: API access (early access)
+  - id: descript-business
+    name: Business
+    type: subscription
+    description: '$50/user/month annual ($65/month monthly); ~2,400 minutes/mo + 50 bonus, 1,500 AI credits/mo + 1,000 bonus.'
+    entries:
+      - label: Seat (annual)
+        name: seat_annual
+        type: subscription
+        metric: seat
+        limit: 1
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: '50.00'
+        userMultiplied: true
+      - label: Seat (monthly)
+        name: seat_monthly
+        type: subscription
+        metric: seat
+        limit: 1
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: '65.00'
+        userMultiplied: true
+      - label: Transcription minutes
+        name: transcription_minutes
+        type: quota
+        metric: minute
+        limit: 2400
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: included
+        userMultiplied: false
+      - label: AI credits
+        name: ai_credits
+        type: quota
+        metric: credit
+        limit: 1500
+        timeFrame: month
+        geo: global
+        unit: 1
+        price: included
+        userMultiplied: false
+    elements:
+      - name: Brand Studio
+      - name: Translate and dub video in 30+ languages with proofread
+      - name: Custom avatar generation
+      - name: Priority support with SLA
+      - name: API access (early access)
+  - id: descript-enterprise
+    name: Enterprise
+    type: enterprise
+    description: Custom pricing; SSO/SCIM, advanced security, dedicated support, security reviews.
+    entries:
+      - label: Annual contract
+        name: annual
+        type: subscription
+        metric: year
+        limit: -1
+        timeFrame: year
+        geo: global
+        unit: 1
+        price: 'contact sales'
+        userMultiplied: false
+    elements:
+      - name: SSO / SCIM
+      - name: Dedicated support
+      - name: Custom security review
+      - name: Flexible licensing
+      - name: API access (early access)

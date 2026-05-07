@@ -1,13 +1,190 @@
 aid: descript
-url: https://raw.githubusercontent.com/api-evangelist/descript/refs/heads/main/apis.yml
 name: Descript
-type: Index
+description: Descript is an AI-powered video and audio editing platform. Descript's API lets you programmatically
+  create projects, import media, run AI ("Underlord") edits, publish compositions, and export transcripts —
+  all without opening the desktop app. The API surfaces the same job model that backs the desktop editor and
+  is currently in early access.
 image: https://kinlane-productions.s3.amazonaws.com/apis-json/apis-json-logo.jpg
-description: 'Programmatic API to create projects, import media, and edit projects.'
+url: https://raw.githubusercontent.com/api-evangelist/descript/refs/heads/main/apis.yml
 created: '2026-05-06'
 modified: '2026-05-06'
 specificationVersion: '0.19'
+type: Index
+access: 3rd-Party
 tags:
-  - API
-url-source: https://docs.descriptapi.com/
-apis: []
+  - AI
+  - Audio Editing
+  - Captions
+  - Media
+  - Podcasting
+  - Transcription
+  - Video Editing
+apis:
+  - aid: descript:descript-platform-api
+    name: Descript Platform API
+    description: REST API for programmatically creating projects, importing media, running AI edits via the
+      Underlord agent, publishing compositions, exporting transcripts, and managing asynchronous jobs in a
+      Descript Drive. Authenticated with a personal Bearer API token scoped to a single Drive.
+    image: https://kinlane-productions.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+    humanURL: https://docs.descriptapi.com/
+    baseURL: https://descriptapi.com/v1
+    tags:
+      - AI
+      - Audio Editing
+      - Jobs
+      - Media
+      - Projects
+      - Publishing
+      - Transcription
+      - Video Editing
+    properties:
+      - type: Documentation
+        url: https://docs.descriptapi.com/
+      - type: APIReference
+        url: https://docs.descriptapi.com/openapi-experimental.html
+      - type: OpenAPI
+        url: openapi/descript-openapi.yml
+      - type: Authentication
+        url: https://docs.descriptapi.com/#section/Authentication
+      - type: RateLimits
+        url: https://docs.descriptapi.com/#section/Rate-Limiting
+      - type: GettingStarted
+        url: https://docs.descriptapi.com/#tag/Getting-started
+      - type: CLI
+        url: https://www.npmjs.com/package/@descript/platform-cli
+common:
+  - type: Portal
+    url: https://www.descript.com/api
+  - type: Documentation
+    url: https://docs.descriptapi.com/
+  - type: APIReference
+    url: https://docs.descriptapi.com/openapi-experimental.html
+  - type: SignUp
+    url: https://web.descript.com/signup
+  - type: Login
+    url: https://web.descript.com/login
+  - type: Pricing
+    url: https://www.descript.com/pricing
+  - type: Plans
+    url: plans/descript-plans-pricing.yml
+  - type: RateLimits
+    url: rate-limits/descript-rate-limits.yml
+  - type: Resources
+    url: finops/descript-finops.yml
+    title: FinOps Framework Profile
+  - type: CLI
+    url: https://www.npmjs.com/package/@descript/platform-cli
+  - type: Support
+    url: https://help.descript.com/
+  - type: KnowledgeCenter
+    url: https://help.descript.com/
+  - type: Blog
+    url: https://www.descript.com/blog
+  - type: YouTube
+    url: https://www.youtube.com/@descriptapp
+  - type: TermsOfService
+    url: https://www.descript.com/terms
+  - type: PrivacyPolicy
+    url: https://www.descript.com/privacy
+  - type: Security
+    url: https://www.descript.com/security
+  - type: GitHubOrganization
+    url: https://github.com/descriptinc
+  - type: Features
+    data:
+      - name: Project Creation
+        description: Create new projects in a Drive and import media from public or pre-signed URLs in a single
+          API request.
+      - name: Direct File Upload
+        description: Receive 3-hour signed upload URLs from the import endpoint and PUT media bytes directly
+          to storage.
+      - name: AI Agent Editing
+        description: Send natural-language prompts to the Underlord agent to apply Studio Sound, captions,
+          filler-word removal, translation, dubbing, and rough-cut building.
+      - name: Asynchronous Jobs
+        description: All long-running operations return a job_id; clients poll GET /v1/jobs/{job_id} or supply
+          a callback_url for webhook delivery.
+      - name: Composition Publishing
+        description: Publish compositions to public, unlisted, drive, or private access levels with
+          configurable resolution (480p–4K) for video.
+      - name: Transcript Export
+        description: Export composition transcripts in txt, markdown, html, rtf, or docx with configurable
+          speaker labels, markers, and timecodes.
+      - name: Multi-Language Transcription
+        description: Automatically transcribe imported media in 25 languages with multi-speaker detection on
+          paid plans.
+      - name: Edit-in-Descript Partner Flow
+        description: Generate one-time import URLs for partner integrations so users can hand off media into
+          Descript with a single click.
+      - name: Published Project Metadata
+        description: Retrieve metadata (download URL, privacy, subtitles in WebVTT) for published projects via
+          a public slug endpoint.
+      - name: Rate-Limit Headers
+        description: 429 responses include Retry-After, X-RateLimit-Remaining, and X-RateLimit-Consumed for
+          client-side budgeting.
+  - type: UseCases
+    data:
+      - name: Podcast Production Automation
+        description: Import recordings, run Studio Sound and filler-word removal, and publish episodes without
+          opening the desktop app.
+      - name: Bulk Video Captioning
+        description: Programmatically caption a backlog of videos in 25 languages and export captions for
+          downstream platforms.
+      - name: AI-Driven Rough Cuts
+        description: Send raw multitrack recordings to the agent with a prompt like "build a rough cut" and
+          retrieve a near-finished timeline.
+      - name: Translation and Dubbing
+        description: Translate and dub video content into 30+ languages with proofread review using the
+          Business plan's translation pipeline.
+      - name: Content Repurposing
+        description: Generate clips, social cuts, and shorts from long-form recordings using Underlord prompts.
+      - name: Embedded Video Workflows
+        description: Use the Edit-in-Descript partner endpoint to embed Descript editing into third-party
+          recording tools (Ecamm, Restream, SquadCast, Zoom, Captivate).
+  - type: Integrations
+    data:
+      - name: Zoom
+        description: One-click import from Zoom recordings via Edit-in-Descript.
+      - name: SquadCast
+        description: Multi-track remote recording handoff to Descript editing.
+      - name: Restream
+        description: Live-stream recording capture with one-click import.
+      - name: Ecamm
+        description: Mac live production handoff to Descript via Edit-in-Descript.
+      - name: Captivate
+        description: Podcast recording and publishing integration.
+      - name: YouTube
+        description: Direct publish target for finished compositions.
+      - name: Slack
+        description: Embedded video playback and comment notifications via the Descript bot.
+      - name: HubSpot
+        description: Publish destination for marketing video content.
+      - name: Wistia
+        description: Publish destination for hosted business video.
+      - name: Adobe Premiere / Audition
+        description: Timeline export targets for Adobe pro editors.
+      - name: Final Cut Pro / DaVinci Resolve / Avid Pro Tools / Apple Logic / Reaper
+        description: Timeline export to professional NLEs and DAWs for finishing.
+      - name: Buzzprout / Castos / Podbean / Podcast.co / Transistor / Captivate / Blubrry
+        description: Podcast hosting publish destinations.
+      - name: Coursera
+        description: Educational publishing destination.
+      - name: Google Drive
+        description: Cloud storage publish destination.
+      - name: VideoAsk / Headliner / Hello Audio / eWebinar
+        description: Specialized publishing destinations for interactive video, audiograms, and webinars.
+  - type: Compliance
+    data:
+      - name: SOC 2 Type II
+        description: Audited SOC 2 Type II compliance.
+      - name: GDPR
+        description: GDPR-compliant data handling with EU data subject rights honored.
+      - name: CCPA
+        description: California Consumer Privacy Act-compliant.
+      - name: Encryption
+        description: AES-256 at rest; TLS 1.2 in transit.
+      - name: Data Deletion
+        description: Deleted projects are permanently removed within 30 days.
+maintainers:
+  - FN: Kin Lane
+    email: kin@apievangelist.com
