@@ -185,6 +185,15 @@ common:
         description: AES-256 at rest; TLS 1.2 in transit.
       - name: Data Deletion
         description: Deleted projects are permanently removed within 30 days.
+  - type: Integrations
+    url: https://www.descript.com/integrations
+integrations:
+  - name: Green Screen
+  - name: Video Editor
+  - name: Voice Enhancer
+  - name: Speech to Text Converter
+  - name: Audio to Text Converter
+  - name: YouTube Clip Maker
 maintainers:
   - FN: Kin Lane
     email: kin@apievangelist.com
