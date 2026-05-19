@@ -1,0 +1,80 @@
+naftiko: 1.0.0-alpha2
+info:
+  label: Descript API — Export from Descript
+  description: 'Descript API — Export from Descript. 1 operations. Lead operation: Get Published Project Metadata. Self-contained
+    Naftiko capability covering one Descript business surface.'
+  tags:
+  - Descript
+  - Export from Descript
+  created: '2026-05-19'
+  modified: '2026-05-19'
+binds:
+- namespace: env
+  keys:
+    DESCRIPT_API_KEY: DESCRIPT_API_KEY
+capability:
+  consumes:
+  - type: http
+    namespace: descript-export-from-descript
+    baseUri: https://descriptapi.com/v1
+    description: Descript API — Export from Descript business capability. Self-contained, no shared references.
+    resources:
+    - name: published_projects-publishedProjectSlug
+      path: /published_projects/{publishedProjectSlug}
+      operations:
+      - name: getpublishedprojectmetadata
+        method: GET
+        description: Get Published Project Metadata
+        outputRawFormat: json
+        outputParameters:
+        - name: result
+          type: object
+          value: $.
+        inputParameters:
+        - name: publishedProjectSlug
+          in: path
+          type: string
+          description: The unique URL slug identifying the published project
+          required: true
+    authentication:
+      type: bearer
+      token: '{{env.DESCRIPT_API_KEY}}'
+  exposes:
+  - type: rest
+    namespace: descript-export-from-descript-rest
+    port: 8080
+    description: REST adapter for Descript API — Export from Descript. One Spectral-compliant resource per consumed operation,
+      prefixed with /v1.
+    resources:
+    - path: /v1/published-projects/{publishedprojectslug}
+      name: published-projects-publishedprojectslug
+      description: REST surface for published_projects-publishedProjectSlug.
+      operations:
+      - method: GET
+        name: getpublishedprojectmetadata
+        description: Get Published Project Metadata
+        call: descript-export-from-descript.getpublishedprojectmetadata
+        with:
+          publishedProjectSlug: rest.publishedProjectSlug
+        outputParameters:
+        - type: object
+          mapping: $.
+  - type: mcp
+    namespace: descript-export-from-descript-mcp
+    port: 9090
+    transport: http
+    description: MCP adapter for Descript API — Export from Descript. One tool per consumed operation, routed inline through
+      this capability's consumes block.
+    tools:
+    - name: get-published-project-metadata
+      description: Get Published Project Metadata
+      hints:
+        readOnly: true
+        destructive: false
+        idempotent: true
+      call: descript-export-from-descript.getpublishedprojectmetadata
+      with:
+        publishedProjectSlug: tools.publishedProjectSlug
+      outputParameters:
+      - type: object
+        mapping: $.

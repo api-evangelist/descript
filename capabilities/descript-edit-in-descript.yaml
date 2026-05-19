@@ -1,0 +1,80 @@
+naftiko: 1.0.0-alpha2
+info:
+  label: Descript API — Edit in Descript
+  description: 'Descript API — Edit in Descript. 1 operations. Lead operation: Create Import URL. Self-contained Naftiko capability
+    covering one Descript business surface.'
+  tags:
+  - Descript
+  - Edit in Descript
+  created: '2026-05-19'
+  modified: '2026-05-19'
+binds:
+- namespace: env
+  keys:
+    DESCRIPT_API_KEY: DESCRIPT_API_KEY
+capability:
+  consumes:
+  - type: http
+    namespace: descript-edit-in-descript
+    baseUri: https://descriptapi.com/v1
+    description: Descript API — Edit in Descript business capability. Self-contained, no shared references.
+    resources:
+    - name: edit_in_descript-schema
+      path: /edit_in_descript/schema
+      operations:
+      - name: posteditindescriptschema
+        method: POST
+        description: Create Import URL
+        outputRawFormat: json
+        outputParameters:
+        - name: result
+          type: object
+          value: $.
+        inputParameters:
+        - name: body
+          in: body
+          type: object
+          description: Request body (JSON).
+          required: true
+    authentication:
+      type: bearer
+      token: '{{env.DESCRIPT_API_KEY}}'
+  exposes:
+  - type: rest
+    namespace: descript-edit-in-descript-rest
+    port: 8080
+    description: REST adapter for Descript API — Edit in Descript. One Spectral-compliant resource per consumed operation,
+      prefixed with /v1.
+    resources:
+    - path: /v1/edit-in-descript/schema
+      name: edit-in-descript-schema
+      description: REST surface for edit_in_descript-schema.
+      operations:
+      - method: POST
+        name: posteditindescriptschema
+        description: Create Import URL
+        call: descript-edit-in-descript.posteditindescriptschema
+        with:
+          body: rest.body
+        outputParameters:
+        - type: object
+          mapping: $.
+  - type: mcp
+    namespace: descript-edit-in-descript-mcp
+    port: 9090
+    transport: http
+    description: MCP adapter for Descript API — Edit in Descript. One tool per consumed operation, routed inline through this
+      capability's consumes block.
+    tools:
+    - name: create-import-url
+      description: Create Import URL
+      hints:
+        readOnly: false
+        destructive: false
+        idempotent: false
+      call: descript-edit-in-descript.posteditindescriptschema
+      with:
+        body: tools.body
+      outputParameters:
+      - type: object
+        mapping: $.
