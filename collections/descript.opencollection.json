@@ -1,0 +1,353 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Descript API",
+    "version": "1.2"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "API Endpoints",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Import media and sequences",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://descriptapi.com/v1/jobs/import/project_media",
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Import media files into a new or existing project and create compositions.\n\nThis endpoint can:\n- Create a new project if `project_id` is not provided\n- Import media files from URLs\n- Create multitrack sequences\n- Create compositions (timelines) from existing or new media in the project\n- Trigger transcription and other background processing tasks\n\n### Media URL requirements\n- URLs must be accessible by Descript servers\n- URLs must support HTTP Range requests\n- Recommended to sign URLs for 12-48 "
+        },
+        {
+          "info": {
+            "name": "Agent edit",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://descriptapi.com/v1/jobs/agent",
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Use a background agent to create and edit projects using a natural language prompt.\n\n- **Edit existing project**: Provide a `project_id` to edit an existing project\n- **Target a specific composition**: Provide both `project_id` and `composition_id` to direct the agent to a specific composition within the project\n- **Create new project**: Provide a `project_name` instead of `project_id` to create a new project\n\n### Common use cases\n- Create new content: \"create a 30-second video about cooking tip"
+        },
+        {
+          "info": {
+            "name": "Publish project media",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://descriptapi.com/v1/jobs/publish",
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Publish a project composition to create a shareable link and download the exported file.\n\nPublishes a specific composition from a project, rendering the output as video or audio\nat the specified resolution. When the job completes successfully the result contains both:\n\n- `share_url`: a public URL that can be used to view the published content on Descript's share site.\n- `download_url`: a time-limited signed URL to download the exported media file directly,\n  along with `download_url_expires_at` "
+        },
+        {
+          "info": {
+            "name": "List jobs",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://descriptapi.com/v1/jobs",
+            "params": [
+              {
+                "name": "project_id",
+                "value": "",
+                "type": "query",
+                "description": "Filter by project ID"
+              },
+              {
+                "name": "type",
+                "value": "",
+                "type": "query",
+                "description": "Filter by job type"
+              },
+              {
+                "name": "cursor",
+                "value": "",
+                "type": "query",
+                "description": "Cursor for the next page of results, obtained from `pagination.next_cursor` in a previous response"
+              },
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of items per page (1-100). Defaults to 20."
+              },
+              {
+                "name": "created_after",
+                "value": "",
+                "type": "query",
+                "description": "Filter jobs created after this timestamp (ISO 8601). Default: 7 days ago. Oldest allowed: 30 days ago."
+              },
+              {
+                "name": "created_before",
+                "value": "",
+                "type": "query",
+                "description": "Filter jobs created before this timestamp (ISO 8601). Default: now."
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List recent jobs with optional filtering by project or job type.\n\nBy default, jobs created within the last 7 days are returned. Use `created_after` and\n`created_before` to customize the time range. The maximum lookback is 30 days.\n\nResults are paginated. Use the `cursor` from the response `pagination.next_cursor` to\nfetch subsequent pages.\n\nQuery parameters allow you to filter the results:\n* Filter by `project_id` to see all jobs for a project\n* Filter by `type` to see specific job types (import"
+        },
+        {
+          "info": {
+            "name": "Get job status",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://descriptapi.com/v1/jobs/:job_id",
+            "params": [
+              {
+                "name": "job_id",
+                "value": "",
+                "type": "path",
+                "description": "The job ID"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Retrieve the status of any job.\n\nThe response format varies based on job type and includes type-specific fields.\n"
+        },
+        {
+          "info": {
+            "name": "Cancel job",
+            "type": "http"
+          },
+          "http": {
+            "method": "DELETE",
+            "url": "https://descriptapi.com/v1/jobs/:job_id",
+            "params": [
+              {
+                "name": "job_id",
+                "value": "",
+                "type": "path",
+                "description": "The job ID"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Cancel a running job.\n"
+        },
+        {
+          "info": {
+            "name": "List projects",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://descriptapi.com/v1/projects",
+            "params": [
+              {
+                "name": "name",
+                "value": "",
+                "type": "query",
+                "description": "Filter projects whose name contains this string (case-insensitive)."
+              },
+              {
+                "name": "folder_path",
+                "value": "",
+                "type": "query",
+                "description": "Filter projects by folder path (e.g. \"Clients/Acme/Videos\"). Use \"/\" to separate nested folders. Returns only projects directly inside the deepest folder."
+              },
+              {
+                "name": "created_by",
+                "value": "",
+                "type": "query",
+                "description": "Filter projects created by this user UUID. Pass `me` to filter by the authenticated user."
+              },
+              {
+                "name": "created_after",
+                "value": "",
+                "type": "query",
+                "description": "Filter projects created after this ISO 8601 timestamp."
+              },
+              {
+                "name": "created_before",
+                "value": "",
+                "type": "query",
+                "description": "Filter projects created before this ISO 8601 timestamp."
+              },
+              {
+                "name": "updated_after",
+                "value": "",
+                "type": "query",
+                "description": "Filter projects updated after this ISO 8601 timestamp."
+              },
+              {
+                "name": "updated_before",
+                "value": "",
+                "type": "query",
+                "description": "Filter projects updated before this ISO 8601 timestamp."
+              },
+              {
+                "name": "sort",
+                "value": "",
+                "type": "query",
+                "description": "Sort field. Defaults to created_at."
+              },
+              {
+                "name": "direction",
+                "value": "",
+                "type": "query",
+                "description": "Sort direction. Defaults to desc."
+              },
+              {
+                "name": "cursor",
+                "value": "",
+                "type": "query",
+                "description": "Pagination cursor from a previous response's `pagination.next_cursor`."
+              },
+              {
+                "name": "limit",
+                "value": "",
+                "type": "query",
+                "description": "Number of projects per page (1-100). Defaults to 20."
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "List projects accessible to the authenticated user within a drive.\n\nThe drive is determined from the access token.\n\nResults are paginated. Use the `cursor` from the response `pagination.next_cursor`\nto fetch subsequent pages.\n"
+        },
+        {
+          "info": {
+            "name": "Get project details",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://descriptapi.com/v1/projects/:project_id",
+            "params": [
+              {
+                "name": "project_id",
+                "value": "",
+                "type": "path",
+                "description": "The project UUID"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Get a detailed project summary including all media files and compositions.\n\nReturns the project's id, name, drive_id, a map of media files (keyed by\ndisplay path) with type and duration, and a list of compositions with id,\nname, duration, and media type.\n\nUse this to inspect a project's contents before editing or importing media.\n"
+        },
+        {
+          "info": {
+            "name": "Check API status",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://descriptapi.com/v1/status",
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "> **Work in progress** — This endpoint is not yet available and will return an error if called.\n\nCheck API availability and validate authentication token.\n\nThis endpoint can be used to:\n- Verify that your authentication token is valid\n- Check API connectivity without performing any heavy operations\n\nReturns a success response if the token is valid, or a 401 error if the token is invalid or missing.\n"
+        }
+      ]
+    },
+    {
+      "info": {
+        "name": "Export from Descript",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get Published Project Metadata",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://descriptapi.com/v1/published_projects/:publishedProjectSlug",
+            "params": [
+              {
+                "name": "publishedProjectSlug",
+                "value": "",
+                "type": "path",
+                "description": "The unique URL slug identifying the published project"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Retrieve metadata for a published Descript project by its URL slug. This endpoint provides information\nabout the published project including title, duration, publisher details, privacy settings, and subtitles.\n\nThis endpoint requires authentication using a personal token and is subject to rate limiting of 1000\nrequests per hour per user.\n"
+        }
+      ]
+    },
+    {
+      "info": {
+        "name": "Edit in Descript",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Create Import URL",
+            "type": "http"
+          },
+          "http": {
+            "method": "POST",
+            "url": "https://descriptapi.com/v1/edit_in_descript/schema",
+            "body": {
+              "type": "json",
+              "data": "{}"
+            },
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Create an Import URL by sending a Project schema to Descript API from your service's backend.\n\n### Import Schema\nOur import schemas are specified as a minimal JSON list of files which is detailed in full at the bottom of this\nsection. At it's smallest, the request body looks like:\n\n```\n{\n  \"partner_drive_id\": \"162c61d1-6ced-4b25-a622-7dba922983ee\",\n  \"project_schema\": {\n    \"schema_version\": \"1.0.0\",\n    \"files\": [{\"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd"
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}

@@ -1,0 +1,3787 @@
+{
+  "item": [
+    {
+      "id": "ef6de8e7-ccb2-4230-974a-bad4b666db6e",
+      "name": "Getting started",
+      "description": {
+        "content": "> **Early Access:** These APIs are still under active development, and may change and evolve over time. We're thankful for your input, and excited to build with you.\n\nThe Descript API lets you programmatically create projects, import media, and edit your projects — all without opening the app.\n\nTo learn more, visit [descript.com/api](https://descript.com/api).\n\n## Create an API token\n\n1. In Descript, open **Settings** and select **API tokens** from the sidebar. Then click **Create token**.\n\n![Navigate to Settings > API tokens and click Create token](assets/token1.png)\n\n2. Give your token a name and select the Drive it should be associated with. Click **Create token**.\n\n<img src=\"assets/token2.png\" alt=\"Name your token and select a Drive\" width=\"500\" />\n\n3. Copy your token and store it in a safe place. You won't be able to view it again. If you lose it, you'll need to generate a new one.\n\n<img src=\"assets/token3.png\" alt=\"Copy and save your API token\" width=\"500\" />\n\n> **Warning:** Treat your API token like a password. Anyone with your token can make API requests on your behalf using your account permissions. Never share your token publicly or commit it to source control.\n\nInclude the token as a Bearer token in the `Authorization` header of your API requests.\n\n## Import media into a new project\n\nYou can create a new project, import media, and place the media into a composition all in one API request using the [import endpoint](#operation/importProjectMedia). This step also transcribes and processes the media so that it's ready for you or the agent to edit.\n\nTo import files, pass in public or pre-signed URIs. Currently, the API does not support uploading a file directly. To test the API with an example file, use the demo video included in the sample request below.\n\nImporting and processing is an asynchronous job, so the response payload will contain a `job_id` for you to [query the status of the job](#operation/getJob) and information about the newly created project. Note that `project_id` and `project_url` are returned immediately alongside `job_id`, but opening the project in Descript will not always show the API's processing state in real time. To prevent unintended changes, we recommend that you do not make any changes to the project until the job has stopped.\n\n\n\n**Request**\n\n```bash\ncurl -X POST https://descriptapi.com/v1/jobs/import/project_media \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"project_name\": \"My First Video\",\n    \"add_media\": {\n      \"demo.mp4\": {\n        \"url\": \"https://test-files.descriptapi.com/demo-video.mp4\"\n      }\n    },\n    \"add_compositions\": [\n      {\n        \"name\": \"Demo Video\",\n        \"clips\": [\n          { \"media\": \"demo.mp4\" }\n        ]\n      }\n    ]\n  }'\n```\n\n**Response**\n\n```json\n{\n  \"job_id\": \"project-media-import-9d635d5b\",\n  \"drive_id\": \"c9c5c47e\",\n  \"project_id\": \"e2f89ce6\",\n  \"project_url\": \"https://web.descript.com/e2f89ce6\"\n}\n```\n\n## Check for import completion\n\nPoll the [job status endpoint](#operation/getJob) using the `job_id` from the last step to check whether the import job is finished processing. When it is, you'll see `job_state: \"stopped\"`. You can then check the `results` object to see its full results.\n\nYou can also pass in a `callback_url` as a part of the first import request, and we'll ping you when the job has stopped with the same response payload.\n\n**Request**\n\n```bash\ncurl https://descriptapi.com/v1/jobs/project-media-import-9d635d5b \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\"\n```\n\n**Response**\n\n```json\n{\n  \"job_id\": \"project-media-import-9d635d5b\",\n  \"job_type\": \"import/project_media\",\n  \"job_state\": \"stopped\",\n  \"project_id\": \"e2f89ce6\",\n  \"project_url\": \"https://web.descript.com/e2f89ce6\",\n  \"result\": {\n    \"status\": \"success\",\n    \"media_status\": {\n      \"main.mp4\": {\n        \"status\": \"success\",\n        \"duration_seconds\": 69.477006\n      }\n    },\n    \"created_compositions\": [\n      { \"id\": \"f8e5088a-4d53-4aab-9d4f-c6624b7d7622\", \"name\": \"Demo Video\" }\n    ]\n  }\n}\n```\n\n## Prompt for edits with Agent Underlord\n\nOnce your media is imported, you can use the [agent edit endpoint](#operation/agentEditJob) to prompt Underlord for edits, just as you would in the app. Because it's an API, conversation and follow up questions aren't practical. So we recommend framing your edits as a one-shot prompt with all the information the agent needs.\n\nEditing can take some time, so the response also returns a `job_id` that you can use to [check the status of the job](#operation/getJob). You can also pass in a `callback_url` as a part of an agent request, and we'll ping you when the job has stopped.\n\n**Request**\n\n```bash\ncurl -X POST https://descriptapi.com/v1/jobs/agent \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"project_id\": \"e2f89ce6\",\n    \"prompt\": \"Add studio sound and captions\"\n  }'\n```\n\n**Response**\n\n```json\n{\n  \"job_id\": \"project-agent-edit-e2f89ce6\",\n  \"drive_id\": \"c9c5c47e\",\n  \"project_id\": \"e2f89ce6\",\n  \"project_url\": \"https://web.descript.com/e2f89ce6\"\n}\n```\n\n## Wait for the agent to complete its job\n\nPoll the [job status endpoint](#operation/getJob) using the `job_id`. When the agent job completes successfully, the response includes a summary of what it accomplished (see the `result.agent_response` field). Use the project URL to open the project in Descript and review Underlord's changes.\n\n**Request**\n\n```bash\ncurl https://descriptapi.com/v1/jobs/project-agent-edit-e2f89ce6 \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\"\n```\n\nOnce the agent job is successfully complete, you’ll see a response from the agent with a brief summary of what it accomplished. You can then use the project url to review its changes directly in Descript.\n\n**Response**\n\n```json\n{\n\t\"job_id\":\"project-agent-edit-e2f89ce6\",\n\t\"job_type\":\"agent\",\n  \"project_id\":\"YOUR_PROJECT_ID\",\n\t\"project_url\":\"https://web.descript.com/e2f89ce6\",\n\t\"job_state\":\"stopped\",\n\t\"created_at\":\"2026-02-09T05:42:27.554Z\",\n\t\"stopped_at\":\"2026-02-09T05:43:15.296Z\",\n\t\"drive_id\":\"1df135a5-dc4a-4dc3-8f7d-681cfbe961e4\",\n\t\"result\":{\n\t\t\"status\":\"success\",\n    \"agent_response\":\"Done! I've applied Studio Sound to enhance your audio quality and added classic karaoke-style captions to your video.\",\n\t\t\"project_changed\":true,\n\t\t\"media_seconds_used\":0,\n\t\t\"ai_credits_used\":32\n  }\n}\n```\n",
+        "type": "text/plain"
+      },
+      "item": [],
+      "event": []
+    },
+    {
+      "id": "42895c2f-146b-4d38-9e9a-78b0a94c82f6",
+      "name": "Using the CLI",
+      "description": {
+        "content": "The CLI wraps the API into a simple to use command line tool with interactive flows for setting up authentication, importing, and prompting the agent. It also has built-in polling for job completion.\n\n## Requirements\n\nBefore installing the CLI, you'll need **Node.js 24 or higher**. Visit [nodejs.org](https://nodejs.org/) to download and install the latest LTS version for your operating system.\n\n## Install and set up\n\nFirst, install the latest version of the CLI using npm.\n\n```bash\nnpm install -g @descript/platform-cli@latest\n```\n\nNext, configure the CLI with your API key.\n\n```bash\ndescript-api config set api-key\n```\n\n![Setting up the CLI](assets/cli-set-up.gif)\n\n\n## Import media\n\nUse the `import` command to create a project by passing a project name and the link to any media you want to upload, or run `descript-api import` for interactive mode. The CLI shows live progress and outputs the project ID when done.\n\n```bash\ndescript-api import \\\n  --name \"My First Project\" \\\n  --media \"https://test-files.descriptapi.com/demo-video.mp4\"\n```\n\n![Interactive CLI import](assets/cli-import.gif)\n\n## Use the agent\n\nUse the `agent` command to edit a project by passing in the project id and an Underlord prompt.\n\n```bash\ndescript-api agent \\\n  --project-id YOUR_PROJECT_ID \\\n  --prompt \"Remove filler words and add Studio Sound to all clips\"\n```\n\nYou can also ask Underlord create a new project from a prompt alone by writing the script for you!\n\n```bash\ndescript-api edit --new \\\n  --prompt \"Write a script about how to make great coffee\"\n```\n\n## All commands\n\nRun `descript-api help` to see the full list of available commands and options.\n",
+        "type": "text/plain"
+      },
+      "item": [],
+      "event": []
+    },
+    {
+      "id": "f27d48aa-2ecd-4b7a-86ce-404db0e3a32b",
+      "name": "API Endpoints",
+      "description": {
+        "content": "Import media, edit projects with AI, and query jobs and projects.",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "d78b3662-e13d-4705-a588-5fd009fd9713",
+          "name": "Import media and sequences",
+          "request": {
+            "name": "Import media and sequences",
+            "description": {
+              "content": "Import media files into a new or existing project and create compositions.\n\nThis endpoint can:\n- Create a new project if `project_id` is not provided\n- Import media files from URLs\n- Create multitrack sequences\n- Create compositions (timelines) from existing or new media in the project\n- Trigger transcription and other background processing tasks\n\n### Media URL requirements\n- URLs must be accessible by Descript servers\n- URLs must support HTTP Range requests\n- Recommended to sign URLs for 12-48 hours to reduce chance of failure\n- [Supported file types](https://help.descript.com/hc/en-us/articles/10164098416909-Supported-file-types)\n\n### Direct file upload\n\nInstead of providing a URL, you can upload files directly by specifying `content_type` and `file_size` for a media item. The response will include a signed `upload_url` for each direct upload item. PUT the file bytes to that URL, and the import job will process it automatically. See the [Direct file upload](#tag/Direct-file-upload) guide for a full walkthrough.\n\n### Async Operations\n\nImports run in the background and return a `job_id`. Monitor progress via the [GET /jobs/{job_id}](#operation/getJob) endpoint.\n\n### Dynamic webhook\n\nIf `callback_url` is provided, Descript will POST the job status to that URL when the job finishes (successfully or not).\n\nThe payload will match the format returned by [GET /jobs/{job_id}](#operation/getJob).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "jobs",
+                "import",
+                "project_media"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"<uuid>\",\n  \"project_name\": \"<string>\",\n  \"team_access\": \"none\",\n  \"folder_name\": \"<string>\",\n  \"add_media\": {\n    \"key_0\": {\n      \"url\": \"<uri>\",\n      \"language\": \"<string>\"\n    }\n  },\n  \"add_compositions\": [\n    {\n      \"clips\": [\n        {\n          \"media\": \"<string>\"\n        },\n        {\n          \"media\": \"<string>\"\n        }\n      ],\n      \"name\": \"<string>\",\n      \"width\": 1920,\n      \"height\": 1080,\n      \"fps\": 30\n    },\n    {\n      \"clips\": [\n        {\n          \"media\": \"<string>\"\n        },\n        {\n          \"media\": \"<string>\"\n        }\n      ],\n      \"name\": \"<string>\",\n      \"width\": 1920,\n      \"height\": 1080,\n      \"fps\": 30\n    }\n  ],\n  \"callback_url\": \"<uri>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "6b940663-438f-428e-af81-e3e9fb72fc33",
+              "name": "Import job created successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "import",
+                    "project_media"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Marketing Video\",\n  \"add_media\": {\n    \"Misc/intro.mp4\": {\n      \"url\": \"https://example.com/intro.mp4\"\n    },\n    \"demo.mp4\": {\n      \"url\": \"https://example.com/demo.mp4\"\n    },\n    \"Misc/outro.mp4\": {\n      \"url\": \"https://example.com/outro.mp4\"\n    }\n  },\n  \"add_compositions\": [\n    {\n      \"name\": \"Rough Cut\",\n      \"clips\": [\n        {\n          \"media\": \"Misc/intro.mp4\"\n        },\n        {\n          \"media\": \"demo.mp4\"\n        },\n        {\n          \"media\": \"Misc/outro.mp4\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"6dc3f30a-58c2-4174-96a6-dc18cf3c7776\",\n  \"drive_id\": \"c9c5c47e-158a-49f7-846b-4f6ee2a229a2\",\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"project_url\": \"https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"upload_urls\": {\n    \"key_0\": {\n      \"upload_url\": \"https://Q.jmolpPgeDoY67W,ve336brZdXVgqKAzunqiVPLXwmPjnCpnUqj40b2HqPVT3tYe3Nh7wBbtyQgNd\",\n      \"asset_id\": \"fb7d3cb4-b4a4-bf99-6626-9be814599e64\",\n      \"artifact_id\": \"7030b802-e1c6-d877-8a73-327a05b1f3ee\"\n    }\n  }\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "a9663c71-8acc-4c23-bdfb-5697a1c9712a",
+              "name": "Invalid input:\n- Malformed request body\n- Invalid media URLs\n- URLs not accessible or don't support Range requests\n- Media filename conflicts with existing files (when importing to existing project)\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "import",
+                    "project_media"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Marketing Video\",\n  \"add_media\": {\n    \"Misc/intro.mp4\": {\n      \"url\": \"https://example.com/intro.mp4\"\n    },\n    \"demo.mp4\": {\n      \"url\": \"https://example.com/demo.mp4\"\n    },\n    \"Misc/outro.mp4\": {\n      \"url\": \"https://example.com/outro.mp4\"\n    }\n  },\n  \"add_compositions\": [\n    {\n      \"name\": \"Rough Cut\",\n      \"clips\": [\n        {\n          \"media\": \"Misc/intro.mp4\"\n        },\n        {\n          \"media\": \"demo.mp4\"\n        },\n        {\n          \"media\": \"Misc/outro.mp4\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"invalid_input\",\n  \"message\": \"Invalid media URL format\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "5ce0f0db-8f3e-4e63-914c-5b28bd014a52",
+              "name": "Unauthorized - missing or invalid authentication token",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "import",
+                    "project_media"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Marketing Video\",\n  \"add_media\": {\n    \"Misc/intro.mp4\": {\n      \"url\": \"https://example.com/intro.mp4\"\n    },\n    \"demo.mp4\": {\n      \"url\": \"https://example.com/demo.mp4\"\n    },\n    \"Misc/outro.mp4\": {\n      \"url\": \"https://example.com/outro.mp4\"\n    }\n  },\n  \"add_compositions\": [\n    {\n      \"name\": \"Rough Cut\",\n      \"clips\": [\n        {\n          \"media\": \"Misc/intro.mp4\"\n        },\n        {\n          \"media\": \"demo.mp4\"\n        },\n        {\n          \"media\": \"Misc/outro.mp4\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Missing or invalid authentication token\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "4120c03b-3e24-4a02-a22d-211aae72e3a2",
+              "name": "Payment Required - insufficient media minutes to start the job",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "import",
+                    "project_media"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Marketing Video\",\n  \"add_media\": {\n    \"Misc/intro.mp4\": {\n      \"url\": \"https://example.com/intro.mp4\"\n    },\n    \"demo.mp4\": {\n      \"url\": \"https://example.com/demo.mp4\"\n    },\n    \"Misc/outro.mp4\": {\n      \"url\": \"https://example.com/outro.mp4\"\n    }\n  },\n  \"add_compositions\": [\n    {\n      \"name\": \"Rough Cut\",\n      \"clips\": [\n        {\n          \"media\": \"Misc/intro.mp4\"\n        },\n        {\n          \"media\": \"demo.mp4\"\n        },\n        {\n          \"media\": \"Misc/outro.mp4\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Payment Required",
+              "code": 402,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"payment_required\",\n  \"message\": \"Insufficient media minutes to start the job (300 minutes required, 50 available)\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "fe59d37d-0558-43bc-a5b6-62963fd091c2",
+              "name": "Forbidden - user does not have access to this resource",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "import",
+                    "project_media"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Marketing Video\",\n  \"add_media\": {\n    \"Misc/intro.mp4\": {\n      \"url\": \"https://example.com/intro.mp4\"\n    },\n    \"demo.mp4\": {\n      \"url\": \"https://example.com/demo.mp4\"\n    },\n    \"Misc/outro.mp4\": {\n      \"url\": \"https://example.com/outro.mp4\"\n    }\n  },\n  \"add_compositions\": [\n    {\n      \"name\": \"Rough Cut\",\n      \"clips\": [\n        {\n          \"media\": \"Misc/intro.mp4\"\n        },\n        {\n          \"media\": \"demo.mp4\"\n        },\n        {\n          \"media\": \"Misc/outro.mp4\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"forbidden\",\n  \"message\": \"User does not have access to this drive or project\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "7f867fe6-a613-4e99-9d00-3f7d085f3798",
+              "name": "Not found:\n- Drive doesn't exist\n- Project doesn't exist (when project_id is provided)\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "import",
+                    "project_media"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Marketing Video\",\n  \"add_media\": {\n    \"Misc/intro.mp4\": {\n      \"url\": \"https://example.com/intro.mp4\"\n    },\n    \"demo.mp4\": {\n      \"url\": \"https://example.com/demo.mp4\"\n    },\n    \"Misc/outro.mp4\": {\n      \"url\": \"https://example.com/outro.mp4\"\n    }\n  },\n  \"add_compositions\": [\n    {\n      \"name\": \"Rough Cut\",\n      \"clips\": [\n        {\n          \"media\": \"Misc/intro.mp4\"\n        },\n        {\n          \"media\": \"demo.mp4\"\n        },\n        {\n          \"media\": \"Misc/outro.mp4\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"not_found\",\n  \"message\": \"Project not found\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "cb0e33e9-6178-4786-8875-ede50cac1bae",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "import",
+                    "project_media"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Marketing Video\",\n  \"add_media\": {\n    \"Misc/intro.mp4\": {\n      \"url\": \"https://example.com/intro.mp4\"\n    },\n    \"demo.mp4\": {\n      \"url\": \"https://example.com/demo.mp4\"\n    },\n    \"Misc/outro.mp4\": {\n      \"url\": \"https://example.com/outro.mp4\"\n    }\n  },\n  \"add_compositions\": [\n    {\n      \"name\": \"Rough Cut\",\n      \"clips\": [\n        {\n          \"media\": \"Misc/intro.mp4\"\n        },\n        {\n          \"media\": \"demo.mp4\"\n        },\n        {\n          \"media\": \"Misc/outro.mp4\"\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "24e458d8-a53b-4c9c-9bb6-7829b360a068",
+          "name": "Agent edit",
+          "request": {
+            "name": "Agent edit",
+            "description": {
+              "content": "Use a background agent to create and edit projects using a natural language prompt.\n\n- **Edit existing project**: Provide a `project_id` to edit an existing project\n- **Target a specific composition**: Provide both `project_id` and `composition_id` to direct the agent to a specific composition within the project\n- **Create new project**: Provide a `project_name` instead of `project_id` to create a new project\n\n### Common use cases\n- Create new content: \"create a 30-second video about cooking tips\"\n- Apply audio effects: \"add studio sound to every clip\"\n- Remove filler words: \"remove all filler words from the transcript\"\n- Create highlights: \"create a 30-second highlight reel\"\n- Content editing: \"remove the section from 1:30 to 2:15\"\n\n### Async Operations\n\nAgent edits run in the background and return a `job_id`. Monitor progress via the [GET /jobs/{job_id}](#operation/getJob) endpoint.\n\n### Dynamic webhook\n\nIf `callback_url` is provided, Descript will POST the job status to that URL when the job completes or fails.\nThe payload will match the format returned by [GET /jobs/{job_id}](#operation/getJob).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "jobs",
+                "agent"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"<string>\",\n  \"project_id\": \"<uuid>\",\n  \"project_name\": \"<string>\",\n  \"composition_id\": \"<string>\",\n  \"model\": \"<string>\",\n  \"team_access\": \"<string>\",\n  \"callback_url\": \"<uri>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "330a9615-b31f-436f-a59f-7704c8c6279a",
+              "name": "Agent edit job created successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "agent"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Cooking Tips Video\",\n  \"prompt\": \"create a 30-second video about cooking tips with background music\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"6dc3f30a-58c2-4174-96a6-dc18cf3c7776\",\n  \"drive_id\": \"c9c5c47e-158a-49f7-846b-4f6ee2a229a2\",\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"project_url\": \"https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "37012134-2741-49ff-ba7a-ce52439e3558",
+              "name": "Invalid input:\n- Malformed request body\n- Invalid project_id or composition_id\n- Empty or invalid prompt\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "agent"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Cooking Tips Video\",\n  \"prompt\": \"create a 30-second video about cooking tips with background music\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"invalid_input\",\n  \"message\": \"Prompt cannot be empty\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "77ba8b1d-72e2-4cd6-9c00-9638a8255523",
+              "name": "Unauthorized - missing or invalid authentication token",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "agent"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Cooking Tips Video\",\n  \"prompt\": \"create a 30-second video about cooking tips with background music\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Missing or invalid authentication token\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "56bd5057-cf36-4a8d-83b2-401d1ce3b62b",
+              "name": "Payment Required - insufficient AI credits to start the job",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "agent"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Cooking Tips Video\",\n  \"prompt\": \"create a 30-second video about cooking tips with background music\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Payment Required",
+              "code": 402,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"payment_required\",\n  \"message\": \"Insufficient AI credits to start the job (100 credits required, 25 available)\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "518e5643-7b6f-4274-ae63-3fd60c7ef81a",
+              "name": "Not found:\n- Project doesn't exist\n- Composition doesn't exist (when composition_id is provided)\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "agent"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Cooking Tips Video\",\n  \"prompt\": \"create a 30-second video about cooking tips with background music\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"not_found\",\n  \"message\": \"Project not found\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "699c18d7-556a-4e93-b6f5-6eb315c46730",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "agent"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_name\": \"Cooking Tips Video\",\n  \"prompt\": \"create a 30-second video about cooking tips with background music\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "d5b0283b-2bba-43f2-9fb0-526e7f375d10",
+          "name": "Publish project media",
+          "request": {
+            "name": "Publish project media",
+            "description": {
+              "content": "Publish a project composition to create a shareable link and download the exported file.\n\nPublishes a specific composition from a project, rendering the output as video or audio\nat the specified resolution. When the job completes successfully the result contains both:\n\n- `share_url`: a public URL that can be used to view the published content on Descript's share site.\n- `download_url`: a time-limited signed URL to download the exported media file directly,\n  along with `download_url_expires_at` indicating when the link expires.\n\n### Republishing\n\nPublishing the same composition a second time automatically reuses the previous share URL,\noverwriting its content — so bookmarks and links handed out for the first publish keep working.\nRepublish matching is keyed on `(project_id, composition_id, media_type)`, so a Video publish\nand an Audio publish of the same composition produce two separate share URLs.\n\n### Async Operations\n\nPublish jobs run in the background and return a `job_id`. Monitor progress via the [GET /jobs/{job_id}](#operation/getJob) endpoint,\nwhich returns the `share_url`, `download_url`, and `download_url_expires_at` fields once the job finishes.\n\n### Dynamic webhook\n\nIf `callback_url` is provided, Descript will POST the job status to that URL when the job completes or fails.\nThe payload will match the format returned by [GET /jobs/{job_id}](#operation/getJob).\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "jobs",
+                "publish"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"<uuid>\",\n  \"composition_id\": \"<uuid>\",\n  \"media_type\": \"Video\",\n  \"resolution\": \"<string>\",\n  \"callback_url\": \"<uri>\",\n  \"access_level\": \"<string>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "9c6732a2-aa96-4228-852f-ec54ad5137b6",
+              "name": "Publish job created successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "publish"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"composition_id\": \"39677a40-1c43-4c36-8449-46cfbc4de2b5\",\n  \"media_type\": \"Video\",\n  \"resolution\": \"1080p\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"6dc3f30a-58c2-4174-96a6-dc18cf3c7776\",\n  \"drive_id\": \"c9c5c47e-158a-49f7-846b-4f6ee2a229a2\",\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"project_url\": \"https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "eba57aea-f045-460d-9088-52bd6ad00c73",
+              "name": "Invalid input:\n- Malformed request body\n- Invalid project_id or composition_id format\n- Invalid media_type or resolution value\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "publish"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"composition_id\": \"39677a40-1c43-4c36-8449-46cfbc4de2b5\",\n  \"media_type\": \"Video\",\n  \"resolution\": \"1080p\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"invalid_input\",\n  \"message\": \"Invalid project_id format\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "f9782eb2-4e13-4052-87da-cb9bc6a224f8",
+              "name": "Unauthorized - missing or invalid authentication token",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "publish"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"composition_id\": \"39677a40-1c43-4c36-8449-46cfbc4de2b5\",\n  \"media_type\": \"Video\",\n  \"resolution\": \"1080p\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Missing or invalid authentication token\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "4b0cbaf7-0ec6-448c-9bce-febba597fbc6",
+              "name": "Forbidden:\n- User doesn't have write access to the project\n- Project doesn't belong to the token's drive\n- Requested `access_level` is not permitted by the drive's publish settings\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "publish"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"composition_id\": \"39677a40-1c43-4c36-8449-46cfbc4de2b5\",\n  \"media_type\": \"Video\",\n  \"resolution\": \"1080p\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"forbidden\",\n  \"message\": \"Forbidden\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "f3d166cf-8fe4-4c19-ac60-11d0c0da1afd",
+              "name": "Unprocessable Entity\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "publish"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"composition_id\": \"39677a40-1c43-4c36-8449-46cfbc4de2b5\",\n  \"media_type\": \"Video\",\n  \"resolution\": \"1080p\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unprocessable Entity (WebDAV) (RFC 4918)",
+              "code": 422,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "body": "",
+              "cookie": [],
+              "_postman_previewlanguage": "text"
+            },
+            {
+              "id": "336acb2b-2e14-4083-8dca-3d63d5f7f4ff",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    "publish"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"composition_id\": \"39677a40-1c43-4c36-8449-46cfbc4de2b5\",\n  \"media_type\": \"Video\",\n  \"resolution\": \"1080p\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "2be9cc8a-bb8b-407a-8f4e-f7269f0b243b",
+          "name": "List jobs",
+          "request": {
+            "name": "List jobs",
+            "description": {
+              "content": "List recent jobs with optional filtering by project or job type.\n\nBy default, jobs created within the last 7 days are returned. Use `created_after` and\n`created_before` to customize the time range. The maximum lookback is 30 days.\n\nResults are paginated. Use the `cursor` from the response `pagination.next_cursor` to\nfetch subsequent pages.\n\nQuery parameters allow you to filter the results:\n* Filter by `project_id` to see all jobs for a project\n* Filter by `type` to see specific job types (import/project_media, agent)\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "jobs"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "project_id",
+                  "value": "<uuid>",
+                  "description": "Filter by project ID"
+                },
+                {
+                  "disabled": false,
+                  "key": "type",
+                  "value": "<string>",
+                  "description": "Filter by job type"
+                },
+                {
+                  "disabled": false,
+                  "key": "cursor",
+                  "value": "<string>",
+                  "description": "Cursor for the next page of results, obtained from `pagination.next_cursor` in a previous response"
+                },
+                {
+                  "disabled": false,
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of items per page (1-100). Defaults to 20."
+                },
+                {
+                  "disabled": false,
+                  "key": "created_after",
+                  "value": "<dateTime>",
+                  "description": "Filter jobs created after this timestamp (ISO 8601). Default: 7 days ago. Oldest allowed: 30 days ago."
+                },
+                {
+                  "disabled": false,
+                  "key": "created_before",
+                  "value": "<dateTime>",
+                  "description": "Filter jobs created before this timestamp (ISO 8601). Default: now."
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "0bad7974-e4a5-4e7e-9c5d-f3b133c592d0",
+              "name": "Jobs list retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "<uuid>"
+                    },
+                    {
+                      "key": "type",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "cursor",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "created_after",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "created_before",
+                      "value": "<dateTime>"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"job_id\": \"6dc3f30a-58c2-4174-96a6-dc18cf3c7776\",\n      \"job_type\": \"import/project_media\",\n      \"job_state\": \"stopped\",\n      \"created_at\": \"2025-11-18T10:30:00Z\",\n      \"stopped_at\": \"2025-11-18T10:35:00Z\",\n      \"drive_id\": \"c9c5c47e-158a-49f7-846b-4f6ee2a229a2\",\n      \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n      \"project_url\": \"https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n      \"result\": {\n        \"status\": \"success\",\n        \"media_status\": {\n          \"Misc/intro.mp4\": {\n            \"status\": \"success\",\n            \"duration_seconds\": 10.5\n          }\n        },\n        \"media_seconds_used\": 11\n      }\n    },\n    {\n      \"job_id\": \"a1b2c3d4-5678-90ab-cdef-1234567890ab\",\n      \"job_type\": \"agent\",\n      \"job_state\": \"running\",\n      \"created_at\": \"2025-11-18T11:00:00Z\",\n      \"drive_id\": \"c9c5c47e-158a-49f7-846b-4f6ee2a229a2\",\n      \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n      \"project_url\": \"https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n      \"progress\": {\n        \"label\": \"Applying Studio Sound to clip 2...\",\n        \"last_update_at\": \"2025-11-18T11:01:00Z\"\n      }\n    }\n  ],\n  \"pagination\": {\n    \"next_cursor\": \"YTFiMmMzZDQtNTY3OC05MGFiLWNkZWYtMTIzNDU2Nzg5MGFi\"\n  }\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "826c1671-e321-4646-8d5b-9119e492df8b",
+              "name": "Unauthorized - invalid or missing authentication token",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "<uuid>"
+                    },
+                    {
+                      "key": "type",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "cursor",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "created_after",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "created_before",
+                      "value": "<dateTime>"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Missing or invalid authentication token\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "0e72c163-9a8f-45fb-9d33-58fe02578ad0",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "project_id",
+                      "value": "<uuid>"
+                    },
+                    {
+                      "key": "type",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "cursor",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "created_after",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "created_before",
+                      "value": "<dateTime>"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "6357aaa3-2d67-4736-a6eb-ab09f3ee0027",
+          "name": "Get job status",
+          "request": {
+            "name": "Get job status",
+            "description": {
+              "content": "Retrieve the status of any job.\n\nThe response format varies based on job type and includes type-specific fields.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "jobs",
+                ":job_id"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<uuid>",
+                  "key": "job_id",
+                  "description": "(Required) The job ID"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "d2fe501b-7ae8-4924-91a5-b3f2570c026f",
+              "name": "Job status retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"job_id\": \"6dc3f30a-58c2-4174-96a6-dc18cf3c7776\",\n  \"job_type\": \"import/project_media\",\n  \"job_state\": \"stopped\",\n  \"created_at\": \"2025-11-18T10:30:00Z\",\n  \"stopped_at\": \"2025-11-18T10:35:00Z\",\n  \"drive_id\": \"c9c5c47e-158a-49f7-846b-4f6ee2a229a2\",\n  \"project_id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"project_url\": \"https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n  \"result\": {\n    \"status\": \"success\",\n    \"media_status\": {\n      \"Misc/intro.mp4\": {\n        \"status\": \"success\",\n        \"duration_seconds\": 10.5\n      },\n      \"demo.mp4\": {\n        \"status\": \"success\",\n        \"duration_seconds\": 125\n      }\n    },\n    \"media_seconds_used\": 136,\n    \"created_compositions\": [\n      {\n        \"id\": \"0171c\",\n        \"name\": \"Rough Cut\"\n      }\n    ]\n  }\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "0ea3c293-361f-471a-8b00-9c69fc92d89c",
+              "name": "Unauthorized - invalid or missing authentication token",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Missing or invalid authentication token\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "76f66f9a-ccd9-4213-9c11-2889f2cf202e",
+              "name": "Forbidden - user does not have access to this job",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"forbidden\",\n  \"message\": \"User does not have access to this job\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "418eade4-3a56-471b-a642-412466ef60b4",
+              "name": "Job not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"not_found\",\n  \"message\": \"Job not found\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "ee8e1e00-eb0d-46a6-b174-0b7abc2fd918",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "e334459a-f44f-4ee9-a07a-1e656518f1d6",
+          "name": "Cancel job",
+          "request": {
+            "name": "Cancel job",
+            "description": {
+              "content": "Cancel a running job.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "jobs",
+                ":job_id"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<uuid>",
+                  "key": "job_id",
+                  "description": "(Required) The job ID"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "8b301eb5-8f76-48c1-a069-44fbd4fa9387",
+              "name": "Job cancelled successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "DELETE",
+                "body": {}
+              },
+              "status": "No Content",
+              "code": 204,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "body": "",
+              "cookie": [],
+              "_postman_previewlanguage": "text"
+            },
+            {
+              "id": "7c536f0c-94fc-4a07-9108-68408dc0357e",
+              "name": "Unauthorized - invalid or missing authentication token",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Missing or invalid authentication token\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "a87d4c1b-4156-4271-9b66-ec1ec7e7e7f6",
+              "name": "Forbidden - user does not have access to this job",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "body": {}
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"forbidden\",\n  \"message\": \"User does not have access to this job\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "6b5d10e6-3ade-480a-8ea3-d4dc29f524da",
+              "name": "Job not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"not_found\",\n  \"message\": \"Job not found\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "a594086b-9879-48a2-a328-b846ffff767d",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "jobs",
+                    ":job_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "job_id",
+                      "description": "(Required) The job ID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "ca981f0c-ae92-4512-afc4-43a473a257b0",
+          "name": "List projects",
+          "request": {
+            "name": "List projects",
+            "description": {
+              "content": "List projects accessible to the authenticated user within a drive.\n\nThe drive is determined from the access token.\n\nResults are paginated. Use the `cursor` from the response `pagination.next_cursor`\nto fetch subsequent pages.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "projects"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "name",
+                  "value": "<string>",
+                  "description": "Filter projects whose name contains this string (case-insensitive)."
+                },
+                {
+                  "disabled": false,
+                  "key": "folder_path",
+                  "value": "<string>",
+                  "description": "Filter projects by folder path (e.g. \"Clients/Acme/Videos\"). Use \"/\" to separate nested folders. Returns only projects directly inside the deepest folder."
+                },
+                {
+                  "disabled": false,
+                  "key": "created_by",
+                  "value": "<string>",
+                  "description": "Filter projects created by this user UUID. Pass `me` to filter by the authenticated user."
+                },
+                {
+                  "disabled": false,
+                  "key": "created_after",
+                  "value": "<dateTime>",
+                  "description": "Filter projects created after this ISO 8601 timestamp."
+                },
+                {
+                  "disabled": false,
+                  "key": "created_before",
+                  "value": "<dateTime>",
+                  "description": "Filter projects created before this ISO 8601 timestamp."
+                },
+                {
+                  "disabled": false,
+                  "key": "updated_after",
+                  "value": "<dateTime>",
+                  "description": "Filter projects updated after this ISO 8601 timestamp."
+                },
+                {
+                  "disabled": false,
+                  "key": "updated_before",
+                  "value": "<dateTime>",
+                  "description": "Filter projects updated before this ISO 8601 timestamp."
+                },
+                {
+                  "disabled": false,
+                  "key": "sort",
+                  "value": "created_at",
+                  "description": "Sort field. Defaults to created_at."
+                },
+                {
+                  "disabled": false,
+                  "key": "direction",
+                  "value": "desc",
+                  "description": "Sort direction. Defaults to desc."
+                },
+                {
+                  "disabled": false,
+                  "key": "cursor",
+                  "value": "<string>",
+                  "description": "Pagination cursor from a previous response's `pagination.next_cursor`."
+                },
+                {
+                  "disabled": false,
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of projects per page (1-100). Defaults to 20."
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "c2004d36-8b9a-4dac-b29e-06c77108894a",
+              "name": "Projects listed successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "projects"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "name",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "folder_path",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "created_by",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "created_after",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "created_before",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "updated_after",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "updated_before",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at"
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "cursor",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n      \"name\": \"Marketing Video\",\n      \"created_at\": \"2025-11-18T10:30:00Z\",\n      \"updated_at\": \"2025-11-19T14:00:00Z\"\n    },\n    {\n      \"id\": \"9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb\",\n      \"name\": \"Marketing Video\",\n      \"created_at\": \"2025-11-18T10:30:00Z\",\n      \"updated_at\": \"2025-11-19T14:00:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"next_cursor\": \"string\"\n  }\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "e3df7492-1899-49de-944f-a86b94f92dce",
+              "name": "Unauthorized - invalid or missing authentication token",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "projects"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "name",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "folder_path",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "created_by",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "created_after",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "created_before",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "updated_after",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "updated_before",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at"
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "cursor",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Missing or invalid authentication token\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "c740c156-5c5d-4d40-8951-7f6a27643ad1",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "projects"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "name",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "folder_path",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "created_by",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "created_after",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "created_before",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "updated_after",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "updated_before",
+                      "value": "<dateTime>"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "created_at"
+                    },
+                    {
+                      "key": "direction",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "cursor",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "40939a49-282f-4a80-8717-00aa9ddcd5b7",
+          "name": "Get project details",
+          "request": {
+            "name": "Get project details",
+            "description": {
+              "content": "Get a detailed project summary including all media files and compositions.\n\nReturns the project's id, name, drive_id, a map of media files (keyed by\ndisplay path) with type and duration, and a list of compositions with id,\nname, duration, and media type.\n\nUse this to inspect a project's contents before editing or importing media.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "projects",
+                ":project_id"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<uuid>",
+                  "key": "project_id",
+                  "description": "(Required) The project UUID"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "6639b7b1-b111-490e-b918-fb348e631f28",
+              "name": "Project details retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "projects",
+                    ":project_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "project_id",
+                      "description": "(Required) The project UUID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"731b3caf-0401-8785-993b-41c215552264\",\n  \"name\": \"string\",\n  \"drive_id\": \"56902655-901f-a03e-acfd-4b1c61c0a044\",\n  \"created_at\": \"1992-03-28T21:26:16.946Z\",\n  \"updated_at\": \"1972-05-09T08:24:53.167Z\",\n  \"media_files\": {\n    \"key_0\": {\n      \"type\": \"video\",\n      \"duration\": 1923.3726339359337\n    }\n  },\n  \"compositions\": [\n    {\n      \"id\": \"331c30c9-4742-33f5-71a6-ed7869f3ad30\",\n      \"name\": \"string\",\n      \"duration\": 2237.646023320282,\n      \"media_type\": \"string\"\n    },\n    {\n      \"id\": \"24ec590f-8922-9987-60d5-347a0acc86eb\",\n      \"name\": \"string\",\n      \"duration\": 6424.007674470095,\n      \"media_type\": \"string\"\n    }\n  ]\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "7431579a-d128-4280-8003-76a8334cc8e3",
+              "name": "Unauthorized - invalid or missing authentication token",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "projects",
+                    ":project_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "project_id",
+                      "description": "(Required) The project UUID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Missing or invalid authentication token\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "5fc7f020-a26c-4999-967f-00064bd7dae3",
+              "name": "Forbidden - user does not have access to this project",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "projects",
+                    ":project_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "project_id",
+                      "description": "(Required) The project UUID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"forbidden\",\n  \"message\": \"User does not have access to this resource\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "f78ae47f-c0d8-447e-b585-ff5bf33fe545",
+              "name": "Project not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "projects",
+                    ":project_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "project_id",
+                      "description": "(Required) The project UUID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"not_found\",\n  \"message\": \"Resource not found\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "19752453-0b7a-4bc0-a2c7-2084e1b8aa7f",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "projects",
+                    ":project_id"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<uuid>",
+                      "key": "project_id",
+                      "description": "(Required) The project UUID"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "35eab69d-e324-4a17-b02f-ae1dea5c727a",
+          "name": "Check API status",
+          "request": {
+            "name": "Check API status",
+            "description": {
+              "content": "> **Work in progress** — This endpoint is not yet available and will return an error if called.\n\nCheck API availability and validate authentication token.\n\nThis endpoint can be used to:\n- Verify that your authentication token is valid\n- Check API connectivity without performing any heavy operations\n\nReturns a success response if the token is valid, or a 401 error if the token is invalid or missing.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "status"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "b48e8ccb-094d-4ad3-964e-41798e215e6b",
+              "name": "Token is valid and API is available",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "status"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ok\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "0d82f9dc-d9f1-4e95-b69c-aa81bc0fb637",
+              "name": "Unauthorized - missing or invalid authentication token",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "status"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Missing or invalid authentication token\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    },
+    {
+      "id": "0168e053-e6b6-456d-b585-a94dce38ae9c",
+      "name": "Direct file upload",
+      "description": {
+        "content": "Instead of providing a public URL, you can upload files directly from your local machine using the [import endpoint](#operation/importProjectMedia). The flow has three steps: request signed upload URLs, PUT your file bytes, then poll for completion.\n\n## Step 1 — Request upload URLs\n\nCall the import endpoint with `content_type` and `file_size` instead of `url` for each media item you want to upload directly.\n\n**Request**\n\n```bash\ncurl -X POST https://descriptapi.com/v1/jobs/import/project_media \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"project_name\": \"My Upload Project\",\n    \"add_media\": {\n      \"recording.mp4\": {\n        \"content_type\": \"video/mp4\",\n        \"file_size\": 52428800\n      }\n    },\n    \"add_compositions\": [\n      {\n        \"name\": \"Main\",\n        \"clips\": [\n          { \"media\": \"recording.mp4\" }\n        ]\n      }\n    ]\n  }'\n```\n\nThe response includes an `upload_urls` object keyed by media reference ID. Each entry contains a signed `upload_url` (valid for 3 hours), plus `asset_id` and `artifact_id` for the created asset.\n\n**Response**\n\n```json\n{\n  \"job_id\": \"project-media-import-a1b2c3d4\",\n  \"drive_id\": \"c9c5c47e\",\n  \"project_id\": \"e2f89ce6\",\n  \"project_url\": \"https://web.descript.com/e2f89ce6\",\n  \"upload_urls\": {\n    \"recording.mp4\": {\n      \"upload_url\": \"https://storage.googleapis.com/bucket/...\",\n      \"asset_id\": \"d4e5f6a7-1234-5678-9abc-def012345678\",\n      \"artifact_id\": \"a1b2c3d4-5678-9abc-def0-123456789abc\"\n    }\n  }\n}\n```\n\n## Step 2 — Upload the file\n\nPUT the raw file bytes to the signed URL. Use `Content-Type: application/octet-stream`.\n\n```bash\ncurl -X PUT \\\n  -H \"Content-Type: application/octet-stream\" \\\n  --data-binary @recording.mp4 \\\n  \"https://storage.googleapis.com/bucket/...\"\n```\n\nThe import job detects the upload automatically and begins processing.\n\n## Step 3 — Poll for completion\n\nCheck the job status the same way as a URL-based import — poll the [job status endpoint](#operation/getJob) with the `job_id`, or provide a `callback_url` in the original request.\n\n```bash\ncurl https://descriptapi.com/v1/jobs/project-media-import-a1b2c3d4 \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\"\n```\n\nWhen the job reaches `job_state: \"stopped\"`, check `result.status` for success or failure.\n\n## Mixing URL imports and direct uploads\n\nYou can combine URL-based and direct upload media items in a single request. Items with `url` are fetched server-side; items with `content_type` and `file_size` return signed upload URLs.\n\n```bash\ncurl -X POST https://descriptapi.com/v1/jobs/import/project_media \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"project_name\": \"Mixed Import\",\n    \"add_media\": {\n      \"intro.mp4\": {\n        \"url\": \"https://example.com/intro.mp4\"\n      },\n      \"recording.mp4\": {\n        \"content_type\": \"video/mp4\",\n        \"file_size\": 52428800\n      }\n    }\n  }'\n```\n\nThe response will include `upload_urls` only for the direct upload items.\n\n## Required fields\n\n| Field | Type | Description |\n|-------|------|-------------|\n| `content_type` | string | MIME type of the file (e.g., `video/mp4`, `audio/wav`) |\n| `file_size` | integer | File size in bytes |\n| `language` | string | *(optional)* ISO 639-1 language code for transcription. Auto-detected if omitted. |\n",
+        "type": "text/plain"
+      },
+      "item": [],
+      "event": []
+    },
+    {
+      "id": "11547ead-d4f3-4b3f-ab8f-401e46fb6f63",
+      "name": "Authentication",
+      "description": {
+        "content": "The Descript API uses personal API tokens to authenticate requests. Tokens are scoped to a specific Drive and inherit your permissions on that Drive.\n\nTo create a token, see the [Getting Started](#section/Getting-started/Create-an-API-token) guide.\n\n> **Warning:** Treat your API token like a password. Anyone with your token can make API requests on your behalf using your account permissions. Never share your token publicly or commit it to source control.\n\n## Using your token\n\nInclude the token as a Bearer token in the `Authorization` header of your API requests.\n\n**Example**\n\n```bash\ncurl -H \"Authorization: Bearer YOUR_API_TOKEN\" https://descriptapi.com/v1/status\n```\n",
+        "type": "text/plain"
+      },
+      "item": [],
+      "event": []
+    },
+    {
+      "id": "435c2520-ccdb-400b-a2a1-d3628dfcea16",
+      "name": "Rate Limiting",
+      "description": {
+        "content": "The Descript API implements rate limiting to ensure fair usage and protect service availability.\nWhen you exceed the rate limit, the API returns a `429 Too Many Requests` response.\n\n## Rate Limit Headers\n\nWhen a rate limit is exceeded, the response includes the following headers:\n\n| Header | Description |\n|--------|-------------|\n| `Retry-After` | Number of seconds to wait before retrying the request |\n| `X-RateLimit-Remaining` | Number of requests remaining in the current window |\n| `X-RateLimit-Consumed` | Number of requests consumed in the current window |\n\n## Handling Rate Limits\n\nWhen you receive a `429` response, use the `Retry-After` header to determine how long to wait before retrying.\nThis approach is more efficient than using fixed delays or exponential backoff alone.\n",
+        "type": "text/plain"
+      },
+      "item": [],
+      "event": []
+    },
+    {
+      "id": "fc906722-c72b-490f-bb68-6987bdf48437",
+      "name": "Edit in Descript",
+      "description": {
+        "content": "> **Note:** The Edit in Descript integration requires contacting Descript for access. [Reach out to us](https://descript.com/api) to get started.\n\nEdit in Descript API enables partners to give their users the ability to transfer audio or video content to Descript for editing.\n\nEdit in Descript buttons work by generating one-time use, public Import URLs to the Descript import UI that users\ncan be automatically sent to. On that page, they can make a few simple selections before kicking off a Partner cloud\nstorage to Descript cloud storage transfer. This will redirect them to a Descript Project ready for editing.\n\nPartners can initiate the request by securely sending an information schema backend-to-backend to the Descript API\nusing a token, in exchange for the Import URL to redirect the user. Partners do not need to store this schema, as\nDescript will do so and use it to start fetching the files when the user confirms the action\n\n1. When a user clicks `Edit in Descript`, partner's backend service makes POST request to:\n    `https://descriptapi.com/v1/edit_in_descript/schema` with an authorization bearer token header and JSON schema body\n2. Descript responds with either an Import URL or an error\n3. Partner redirects the user's browser to the URL returned in step 2 or display an error message and link to help documentation\n\n### Partner User Experience\nSome guidelines for partners as you consider this integration:\n* We recommend placing the `Edit in Descript` option next to your download options\n  * If you offer multiple download options, such as combined vs. split audio/video files, we recommend placing\nthis integration clearly in context with each option, or only the supported option, to help users understand\nwhat will be exported.\n  * Each time you request an import link, a new one is generated. Import links expire after 3 hours. After using an\nimport link, the only way to find an imported Project again is in Descript.\n  * If an import link has expired or the contents of the schema has changed, please request a new import link with\nthe updated schema. This will create a new Descript Project when used.\n* We will provide Descript-branded assets to fit your proposed placement of the `Edit in Descript` CTA and ask\nthat you don't edit the assets beyond what we provide. We are happy to work with you on getting you the right\nassets for your placement.\n* Partners should provide error-handling for the POST request, at minimum displaying a generic error message and\nlinking to a help article (we can provide a link for this if you prefer).\n* Progress will be conveyed to the user in the Descript side of the user experience.\n\n### Descript User Experience\nWhen users are directed to a Descript Import URL, they'll be asked to either create an account or login in order\nto proceed.\n\nNext, they will be presented with a few options about how they'd like to import the data, such as where the new\nDescript Project should be created.\n\nThey'll then be redirected to the Project, where they can monitor the progress of the import and start editing.\n",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "d96d5302-1625-4a98-8cfd-868bfc5b395c",
+          "name": "Create Import URL",
+          "request": {
+            "name": "Create Import URL",
+            "description": {
+              "content": "Create an Import URL by sending a Project schema to Descript API from your service's backend.\n\n### Import Schema\nOur import schemas are specified as a minimal JSON list of files which is detailed in full at the bottom of this\nsection. At it's smallest, the request body looks like:\n\n```\n{\n  \"partner_drive_id\": \"162c61d1-6ced-4b25-a622-7dba922983ee\",\n  \"project_schema\": {\n    \"schema_version\": \"1.0.0\",\n    \"files\": [{\"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955\"}]\n  }\n}\n```\n\n### File Access\nThe file paths provided in the schema need to either be public or pre-signed URIs with enough time before\nexpiration for failures and retries, we suggest URIs that won't expire for 48 hours. We ask that the files have\nalready been saved when the import link is generated to minimize cases where we're waiting for eventually\nconsistent storage of files that will never be written. We will, however, wait for eventual consistency of the\nstorage layer and retry fetching files before eventually timing out.\n\nFiles must be hosted on preapproved hosts as our import process has an allow list which it checks URIs against.\nFiles will be requested with `User-Agent: Descriptbot/1.0` (version may change) for tracking purposes.\n\n### Import link expiration\nImport links are no longer valid after a user imports their data once. Viewing an already used import link will\nnot allow for importing again and will not provide access to a previously created Descript Project. Partners are\nable to generate a new import link at any time, regardless of if a previous import link has been used.\n\nThe API does not currently provide partners with a link to the Descript Project, though users will be redirected\nto it from Descript's web interface the first time they import files, and can always find the Project in Descript.\n\nImport links expire after 3 hours and attempting to use an import link after the pre-signed links in the schema\nfile have expired will result in an error, so we recommend generating the import link after the user has clicked\nthe Edit in Descript button.\n\n### Supported media specification\nWe recommend sending the highest quality, uncompressed versions of files available to you. If you have multiple\ntracks, we recommend prioritizing sending us the full multi-track sequence over a combined file.\n\n* Audio: WAV, FLAC, AAC, MP3\n* Video: h264, HEVC (container: MOV, MP4)\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "edit_in_descript",
+                "schema"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partner_drive_id\": \"<uuid>\",\n  \"project_schema\": {\n    \"schema_version\": \"<string>\",\n    \"files\": [\n      {\n        \"uri\": \"<url>\",\n        \"name\": \"<string>\",\n        \"start_offset\": {\n          \"seconds\": \"<number>\"\n        }\n      },\n      {\n        \"uri\": \"<url>\",\n        \"name\": \"<string>\",\n        \"start_offset\": {\n          \"seconds\": \"<number>\"\n        }\n      }\n    ],\n    \"source_id\": \"<string>\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "358ef550-fe0f-497f-9166-98912e94a603",
+              "name": "Successful operation.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "edit_in_descript",
+                    "schema"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"partner_drive_id\": \"aa3b2d8d-e5ca-41c2-8801-683328293fb9\",\n  \"project_schema\": {\n    \"schema_version\": \"1.0.0\",\n    \"files\": [\n      {\n        \"name\": \"Jane's studio recording\",\n        \"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955\",\n        \"start_offset\": {\n          \"seconds\": 10\n        }\n      },\n      {\n        \"name\": \"Jane's studio recording\",\n        \"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955\",\n        \"start_offset\": {\n          \"seconds\": 10\n        }\n      }\n    ],\n    \"source_id\": \"06b3f5bb-68a2-468a-a5d9-df155c1e3588\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"url\": \"https://web.descript.com/import?nonce=6e3625ca-f885-460d-b2e3-e3faac79c788\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "e3387e73-cb69-4c76-9359-ad921d81dac7",
+              "name": "Invalid input.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "edit_in_descript",
+                    "schema"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"partner_drive_id\": \"aa3b2d8d-e5ca-41c2-8801-683328293fb9\",\n  \"project_schema\": {\n    \"schema_version\": \"1.0.0\",\n    \"files\": [\n      {\n        \"name\": \"Jane's studio recording\",\n        \"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955\",\n        \"start_offset\": {\n          \"seconds\": 10\n        }\n      },\n      {\n        \"name\": \"Jane's studio recording\",\n        \"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955\",\n        \"start_offset\": {\n          \"seconds\": 10\n        }\n      }\n    ],\n    \"source_id\": \"06b3f5bb-68a2-468a-a5d9-df155c1e3588\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "body": "",
+              "cookie": [],
+              "_postman_previewlanguage": "text"
+            },
+            {
+              "id": "8133cc07-07fa-4eec-a664-77a1f5fbf237",
+              "name": "Associated drive does not have Edit in Descript permissions.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "edit_in_descript",
+                    "schema"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"partner_drive_id\": \"aa3b2d8d-e5ca-41c2-8801-683328293fb9\",\n  \"project_schema\": {\n    \"schema_version\": \"1.0.0\",\n    \"files\": [\n      {\n        \"name\": \"Jane's studio recording\",\n        \"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955\",\n        \"start_offset\": {\n          \"seconds\": 10\n        }\n      },\n      {\n        \"name\": \"Jane's studio recording\",\n        \"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955\",\n        \"start_offset\": {\n          \"seconds\": 10\n        }\n      }\n    ],\n    \"source_id\": \"06b3f5bb-68a2-468a-a5d9-df155c1e3588\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "body": "",
+              "cookie": [],
+              "_postman_previewlanguage": "text"
+            },
+            {
+              "id": "76a9fe91-b50c-4340-87c3-f969a6bfb620",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "edit_in_descript",
+                    "schema"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": []
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"partner_drive_id\": \"aa3b2d8d-e5ca-41c2-8801-683328293fb9\",\n  \"project_schema\": {\n    \"schema_version\": \"1.0.0\",\n    \"files\": [\n      {\n        \"name\": \"Jane's studio recording\",\n        \"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955\",\n        \"start_offset\": {\n          \"seconds\": 10\n        }\n      },\n      {\n        \"name\": \"Jane's studio recording\",\n        \"uri\": \"https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955\",\n        \"start_offset\": {\n          \"seconds\": 10\n        }\n      }\n    ],\n    \"source_id\": \"06b3f5bb-68a2-468a-a5d9-df155c1e3588\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    },
+    {
+      "id": "c4e24784-4080-4ee2-bf5e-80589ce43262",
+      "name": "Export from Descript",
+      "description": {
+        "content": "Users of Descript currently have three options to export their edited content. They can export files in various\nformats, share a Descript link, or use our [one-click cloud export](https://help.descript.com/hc/en-us/articles/360043869551-Becoming-a-Supported-Content-Hosting-Partner)\nto publish directly to a partner.\n\n### Roundtrip Metadata\nIf Project data previously came from a partner via an Edit in Descript schema then any Descript Export pages\nwill include `<meta/>` tags which contains the `partner_drive_id` and `source_id` provided when originally\nimporting into Descript. This allows partners to deduplicate data returning back to partner systems after\nediting in Descript. Both partner and source properties are included on all public Descript Export pages.\n\n```\n<meta property=\"descript:partner\" content=\"9121bf3a-60fe-4a31-ad59-ed32df610cc3\" />\n<meta property=\"descript:source\" content=\"409148bd-81aa-4af6-a9c3-29b761506f3a\" />\n```\n",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "6b348545-208d-45ad-a4fe-1198b417d341",
+          "name": "Get Published Project Metadata",
+          "request": {
+            "name": "Get Published Project Metadata",
+            "description": {
+              "content": "Retrieve metadata for a published Descript project by its URL slug. This endpoint provides information\nabout the published project including title, duration, publisher details, privacy settings, and subtitles.\n\nThis endpoint requires authentication using a personal token and is subject to rate limiting of 1000\nrequests per hour per user.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "published_projects",
+                ":publishedProjectSlug"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "publishedProjectSlug",
+                  "description": "(Required) The unique URL slug identifying the published project"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "1ad53de7-3e0d-4d6e-a810-96c5ac440e01",
+              "name": "Successfully retrieved published project metadata.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"project_id\": \"12345678-1234-5678-1234-567812345678\",\n  \"publish_type\": \"video\",\n  \"privacy\": \"unlisted\",\n  \"metadata\": {\n    \"title\": \"My Video Project\",\n    \"duration_seconds\": 125.456,\n    \"duration_formatted\": \"00:02:05\",\n    \"published_at\": \"2025-01-15T10:30:00.000Z\",\n    \"published_by\": {\n      \"first_name\": \"Jane\",\n      \"last_name\": \"Doe\"\n    }\n  },\n  \"subtitles\": \"WEBVTT\\\\n\\\\n00:00:00.000 --> 00:00:02.000\\\\nWelcome to my video\",\n  \"download_url\": \"https://storage.googleapis.com/bucket/file.mp4?X-Goog-Signature=...\",\n  \"download_url_expires_at\": \"2025-01-16T10:30:00.000Z\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "771fb839-0e58-4ac0-a19c-032f3ee569b1",
+              "name": "Unauthorized - invalid or missing authentication token.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Private to drive, user must log in to account with access.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "d5d98cb5-4596-43c8-8ce8-e650139c5f11",
+              "name": "Forbidden - user does not have access to this published project.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"forbidden\",\n  \"message\": \"User id 00000000-0000-0000-0000-000000000000 does not have access to this project\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "db0a0c68-04a9-4191-add7-8856af1ae6dd",
+              "name": "Not found - published project does not exist.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"not_found\",\n  \"message\": \"Published project not found\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "78c1aa30-d658-4989-a247-b63c758bed3e",
+              "name": "Conflict - published project is in an invalid state (processing or failed).",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Conflict",
+              "code": 409,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"conflict\",\n  \"message\": \"Published in invalid state\",\n  \"state\": \"processing\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "085f57ac-350f-4fe4-b83f-2325838c72ab",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "string",
+      "value": "https://descriptapi.com/v1",
+      "key": "baseUrl"
+    }
+  ],
+  "info": {
+    "_postman_id": "1a54185b-ba7f-4c01-be17-dea73d5ec6e4",
+    "name": "Descript API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "Descript API documentation.",
+      "type": "text/plain"
+    }
+  }
+}
