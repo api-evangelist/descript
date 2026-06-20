@@ -4,7 +4,7 @@ description: >-
   Descript is an AI-powered video and audio editing platform. Descript's API lets you programmatically create projects,
   import media, run AI ("Underlord") edits, publish compositions, and export transcripts — all without opening the
   desktop app. The API surfaces the same job model that backs the desktop editor and is currently in early access.
-image: https://kinlane-productions.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+image: https://kinlane-images.s3.amazonaws.com/shared/apis-json/apis-json-logo.jpg
 url: https://raw.githubusercontent.com/api-evangelist/descript/refs/heads/main/apis.yml
 created: '2026-05-06'
 modified: '2026-05-19'
@@ -26,7 +26,7 @@ apis:
       REST API for programmatically creating projects, importing media, running AI edits via the Underlord agent,
       publishing compositions, exporting transcripts, and managing asynchronous jobs in a Descript Drive. Authenticated
       with a personal Bearer API token scoped to a single Drive.
-    image: https://kinlane-productions.s3.amazonaws.com/apis-json/apis-json-logo.jpg
+    image: https://kinlane-images.s3.amazonaws.com/shared/apis-json/apis-json-logo.jpg
     humanURL: https://docs.descriptapi.com/
     baseURL: https://descriptapi.com/v1
     tags:
