@@ -62,7 +62,7 @@ common:
     url: https://docs.descriptapi.com/
   - type: APIReference
     url: https://docs.descriptapi.com/openapi-experimental.html
-  - type: SignUp
+  - type: Signup
     url: https://web.descript.com/signup
   - type: Login
     url: https://web.descript.com/login
