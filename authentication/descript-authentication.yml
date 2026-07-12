@@ -1,0 +1,14 @@
+generated: '2026-07-11'
+method: derived
+source: openapi/descript-openapi.yml
+summary:
+  types:
+  - http
+schemes:
+- name: bearerAuth
+  type: http
+  scheme: bearer
+  description: Personal API token created in Descript Settings → API Tokens. See the Authentication
+    section for details.
+  sources:
+  - openapi/descript-openapi.yml

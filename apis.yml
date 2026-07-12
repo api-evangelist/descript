@@ -54,6 +54,14 @@ apis:
       - type: CLI
         url: https://www.npmjs.com/package/@descript/platform-cli
 common:
+  - type: TrustCenter
+    url: security/descript-trust-center.yml
+  - type: VulnerabilityDisclosure
+    url: security/descript-vulnerability-disclosure.yml
+  - type: DomainSecurity
+    url: security/descript-domain-security.yml
+  - type: Authentication
+    url: authentication/descript-authentication.yml
   - type: LinkedIn
     url: https://www.linkedin.com/company/descript
   - type: Portal
