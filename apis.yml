@@ -54,6 +54,8 @@ apis:
       - type: CLI
         url: https://www.npmjs.com/package/@descript/platform-cli
 common:
+  - type: AgenticAccess
+    url: agentic-access/descript-agentic-access.yml
   - type: TrustCenter
     url: security/descript-trust-center.yml
   - type: VulnerabilityDisclosure
