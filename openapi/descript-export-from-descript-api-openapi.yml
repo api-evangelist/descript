@@ -1,0 +1,331 @@
+openapi: 3.0.0
+info:
+  description: Descript API documentation.
+  version: '1.2'
+  title: Descript API Endpoints Export from Descript API
+  x-logo:
+    url: assets/descript-logo.svg
+    altText: Descript
+  license:
+    name: Proprietary
+    url: https://www.descript.com/terms
+servers:
+- url: https://descriptapi.com/v1
+tags:
+- name: Export from Descript
+  description: 'Users of Descript currently have three options to export their edited content. They can export files in various
+
+    formats, share a Descript link, or use our [one-click cloud export](https://help.descript.com/hc/en-us/articles/360043869551-Becoming-a-Supported-Content-Hosting-Partner)
+
+    to publish directly to a partner.
+
+
+    ### Roundtrip Metadata
+
+    If Project data previously came from a partner via an Edit in Descript schema then any Descript Export pages
+
+    will include `<meta/>` tags which contains the `partner_drive_id` and `source_id` provided when originally
+
+    importing into Descript. This allows partners to deduplicate data returning back to partner systems after
+
+    editing in Descript. Both partner and source properties are included on all public Descript Export pages.
+
+
+    ```
+
+    <meta property="descript:partner" content="9121bf3a-60fe-4a31-ad59-ed32df610cc3" />
+
+    <meta property="descript:source" content="409148bd-81aa-4af6-a9c3-29b761506f3a" />
+
+    ```
+
+    '
+paths:
+  /published_projects/{publishedProjectSlug}:
+    get:
+      tags:
+      - Export from Descript
+      summary: Get Published Project Metadata
+      description: 'Retrieve metadata for a published Descript project by its URL slug. This endpoint provides information
+
+        about the published project including title, duration, publisher details, privacy settings, and subtitles.
+
+
+        This endpoint requires authentication using a personal token and is subject to rate limiting of 1000
+
+        requests per hour per user.
+
+        '
+      operationId: getPublishedProjectMetadata
+      security:
+      - bearerAuth: []
+      parameters:
+      - in: path
+        name: publishedProjectSlug
+        description: The unique URL slug identifying the published project
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successfully retrieved published project metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishedProjectMetadata'
+        '401':
+          description: Unauthorized - invalid or missing authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishedProjectPrivateError'
+        '403':
+          description: Forbidden - user does not have access to this published project.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishedProjectForbiddenError'
+        '404':
+          description: Not found - published project does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishedProjectError'
+        '409':
+          description: Conflict - published project is in an invalid state (processing or failed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishedProjectConflictError'
+        '429':
+          $ref: '#/components/responses/Error429Response'
+components:
+  schemas:
+    PublishedProjectMetadata:
+      type: object
+      description: Metadata for a successfully published Descript project
+      properties:
+        download_url:
+          type: string
+          format: uri
+          description: A time-limited signed URL for downloading the original published media file. See download_url_expires_at for expiration date.
+          example: https://storage.googleapis.com/bucket/file.mp4?X-Goog-Signature=...
+        download_url_expires_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp indicating when the download_url expires. Present when download_url is present.
+          example: '2025-01-16T10:30:00.000Z'
+        project_id:
+          type: string
+          format: uuid
+          description: The unique identifier of the source Descript project
+          example: 12345678-1234-5678-1234-567812345678
+        publish_type:
+          type: string
+          enum:
+          - audio
+          - video
+          - audiogram
+          description: The type of published project
+          example: video
+        privacy:
+          type: string
+          enum:
+          - public
+          - unlisted
+          - private
+          - drive
+          - password
+          description: The access permission level for this published project
+          example: unlisted
+        metadata:
+          type: object
+          description: Detailed metadata about the published project
+          properties:
+            title:
+              type: string
+              description: The title of the published project
+              example: My Video Project
+            duration_seconds:
+              type: number
+              description: Duration of the published content in seconds (rounded to nearest millisecond)
+              example: 125.456
+            duration_formatted:
+              type: string
+              description: Human-readable duration in HH:MM:SS format
+              example: 00:02:05
+            published_at:
+              type: string
+              format: date-time
+              description: ISO 8601 timestamp of when the project was published
+              example: '2025-01-15T10:30:00.000Z'
+            published_by:
+              type: object
+              description: Information about the user who published the project
+              properties:
+                first_name:
+                  type: string
+                  description: First name of the publisher
+                  example: Jane
+                last_name:
+                  type: string
+                  description: Last name of the publisher
+                  example: Doe
+        subtitles:
+          type: string
+          description: Full VTT-formatted subtitle/caption content for the published project
+          example: WEBVTT\n\n00:00:00.000 --> 00:00:02.000\nWelcome to my video
+      required:
+      - project_id
+      - publish_type
+      - privacy
+      - metadata
+      - subtitles
+    PublishedProjectPrivateError:
+      type: object
+      description: Error response when published project is private to drive and user is unauthenticated
+      properties:
+        error:
+          type: string
+          enum:
+          - unauthorized
+          description: Error type identifier
+          example: unauthorized
+        message:
+          type: string
+          description: Human-readable error message
+          example: Private to drive, user must log in to account with access.
+    Error429:
+      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
+
+        to help you implement proper retry logic:
+
+        - `Retry-After`: Number of seconds to wait before retrying
+
+        - `X-RateLimit-Remaining`: Requests remaining in current window
+
+        - `X-RateLimit-Consumed`: Requests consumed in current window
+
+        '
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code indicating rate limit was exceeded
+          example: rate_limit_exceeded
+        message:
+          type: string
+          description: Human-readable error message
+          example: Too many requests
+      required:
+      - error
+      - message
+    PublishedProjectConflictError:
+      type: object
+      description: Error response when published project is in an invalid state
+      properties:
+        error:
+          type: string
+          enum:
+          - conflict
+          description: Error type identifier
+          example: conflict
+        message:
+          type: string
+          description: Human-readable error message
+          example: Published in invalid state
+        state:
+          type: string
+          enum:
+          - processing
+          - failed
+          description: Current state of the published project
+          example: processing
+      required:
+      - error
+      - message
+      - state
+    PublishedProjectForbiddenError:
+      type: object
+      description: Error response when the user does not have access to the published project
+      properties:
+        error:
+          type: string
+          enum:
+          - forbidden
+          description: Error type identifier
+          example: forbidden
+        message:
+          type: string
+          description: Human-readable error message
+          example: User id 00000000-0000-0000-0000-000000000000 does not have access to this project
+    PublishedProjectError:
+      type: object
+      description: Error response for published project requests
+      properties:
+        error:
+          type: string
+          enum:
+          - not_found
+          - unauthorized
+          - forbidden
+          description: Error type identifier
+          example: not_found
+        message:
+          type: string
+          description: Human-readable error message
+          example: Published project not found
+      required:
+      - error
+      - message
+  responses:
+    Error429Response:
+      description: 'Too many requests - rate limit exceeded.
+
+        Use the `Retry-After` header to determine when to retry.
+
+        '
+      headers:
+        Retry-After:
+          description: Number of seconds to wait before retrying the request
+          schema:
+            type: integer
+          example: 30
+        X-RateLimit-Remaining:
+          description: Number of requests remaining in the current rate limit window
+          schema:
+            type: integer
+          example: 0
+        X-RateLimit-Consumed:
+          description: Number of requests consumed in the current rate limit window
+          schema:
+            type: integer
+          example: 100
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error429'
+          examples:
+            rate_limit:
+              summary: Rate limit exceeded
+              value:
+                error: rate_limit_exceeded
+                message: Too many requests. Please try again later.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Personal API token created in Descript Settings → API Tokens. See the Authentication section for details.
+x-tagGroups:
+- name: Early Access Public API
+  tags:
+  - Getting started
+  - Using the CLI
+  - API Endpoints
+  - Direct file upload
+  - Authentication
+  - Rate Limiting
+- name: Partner APIs
+  tags:
+  - Edit in Descript
+  - Export from Descript
