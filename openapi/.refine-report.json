@@ -1,0 +1,18 @@
+{
+  "provider": "descript",
+  "sources": [
+    "descript-api-endpoints-api-openapi.yml",
+    "descript-edit-in-descript-api-openapi.yml",
+    "descript-export-from-descript-api-openapi.yml"
+  ],
+  "outputs": [
+    "descript-api-endpoints-api-openapi.yml",
+    "descript-edit-in-descript-api-openapi.yml",
+    "descript-export-from-descript-api-openapi.yml"
+  ],
+  "archived": [],
+  "errors": [],
+  "warnings": [],
+  "notes": [],
+  "skipped": []
+}
