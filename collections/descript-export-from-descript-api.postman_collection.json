@@ -1,0 +1,414 @@
+{
+  "item": [
+    {
+      "id": "0748fed6-be41-4541-89ba-21e1f89a99dd",
+      "name": "Export from Descript",
+      "description": {
+        "content": "Users of Descript currently have three options to export their edited content. They can export files in various\nformats, share a Descript link, or use our [one-click cloud export](https://help.descript.com/hc/en-us/articles/360043869551-Becoming-a-Supported-Content-Hosting-Partner)\nto publish directly to a partner.\n\n### Roundtrip Metadata\nIf Project data previously came from a partner via an Edit in Descript schema then any Descript Export pages\nwill include `<meta/>` tags which contains the `partner_drive_id` and `source_id` provided when originally\nimporting into Descript. This allows partners to deduplicate data returning back to partner systems after\nediting in Descript. Both partner and source properties are included on all public Descript Export pages.\n\n```\n<meta property=\"descript:partner\" content=\"9121bf3a-60fe-4a31-ad59-ed32df610cc3\" />\n<meta property=\"descript:source\" content=\"409148bd-81aa-4af6-a9c3-29b761506f3a\" />\n```\n",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "b2f0a088-0a62-46be-a663-d49c64a6faf6",
+          "name": "Get Published Project Metadata",
+          "request": {
+            "name": "Get Published Project Metadata",
+            "description": {
+              "content": "Retrieve metadata for a published Descript project by its URL slug. This endpoint provides information\nabout the published project including title, duration, publisher details, privacy settings, and subtitles.\n\nThis endpoint requires authentication using a personal token and is subject to rate limiting of 1000\nrequests per hour per user.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "published_projects",
+                ":publishedProjectSlug"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "publishedProjectSlug",
+                  "description": "(Required) The unique URL slug identifying the published project"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{bearerToken}}"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "id": "32ecbe09-9c8f-4636-9f2b-00313e5101c3",
+              "name": "Successfully retrieved published project metadata.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"project_id\": \"12345678-1234-5678-1234-567812345678\",\n  \"publish_type\": \"video\",\n  \"privacy\": \"unlisted\",\n  \"metadata\": {\n    \"title\": \"My Video Project\",\n    \"duration_seconds\": 125.456,\n    \"duration_formatted\": \"00:02:05\",\n    \"published_at\": \"2025-01-15T10:30:00.000Z\",\n    \"published_by\": {\n      \"first_name\": \"Jane\",\n      \"last_name\": \"Doe\"\n    }\n  },\n  \"subtitles\": \"WEBVTT\\\\n\\\\n00:00:00.000 --> 00:00:02.000\\\\nWelcome to my video\",\n  \"download_url\": \"https://storage.googleapis.com/bucket/file.mp4?X-Goog-Signature=...\",\n  \"download_url_expires_at\": \"2025-01-16T10:30:00.000Z\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "fc0a1613-849b-48e6-a1e2-b206377b9283",
+              "name": "Unauthorized - invalid or missing authentication token.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"unauthorized\",\n  \"message\": \"Private to drive, user must log in to account with access.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "03a84e27-6436-42c8-a6ca-e8384788a783",
+              "name": "Forbidden - user does not have access to this published project.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"forbidden\",\n  \"message\": \"User id 00000000-0000-0000-0000-000000000000 does not have access to this project\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "cabe8af4-2123-4ccf-b3ab-02a59c2dbbde",
+              "name": "Not found - published project does not exist.",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"not_found\",\n  \"message\": \"Published project not found\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "7760f70f-ec88-4014-8199-6c18f9b312b5",
+              "name": "Conflict - published project is in an invalid state (processing or failed).",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Conflict",
+              "code": 409,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"conflict\",\n  \"message\": \"Published in invalid state\",\n  \"state\": \"processing\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "0c574c07-dd23-4045-94ab-9d390740ec07",
+              "name": "Too many requests - rate limit exceeded.\nUse the `Retry-After` header to determine when to retry.\n",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "published_projects",
+                    ":publishedProjectSlug"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "publishedProjectSlug",
+                      "description": "(Required) The unique URL slug identifying the published project"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: bearer",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "Bearer <token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Too Many Requests",
+              "code": 429,
+              "header": [
+                {
+                  "disabled": false,
+                  "description": "Number of seconds to wait before retrying the request",
+                  "key": "Retry-After",
+                  "value": "30"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests remaining in the current rate limit window",
+                  "key": "X-RateLimit-Remaining",
+                  "value": "0"
+                },
+                {
+                  "disabled": false,
+                  "description": "Number of requests consumed in the current rate limit window",
+                  "key": "X-RateLimit-Consumed",
+                  "value": "100"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"rate_limit_exceeded\",\n  \"message\": \"Too many requests. Please try again later.\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "string",
+      "value": "https://descriptapi.com/v1",
+      "key": "baseUrl"
+    }
+  ],
+  "info": {
+    "_postman_id": "4288d440-0eb6-4dc7-800c-382d2a751ffc",
+    "name": "Descript API Endpoints Export from Descript API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "Descript API documentation.",
+      "type": "text/plain"
+    }
+  }
+}

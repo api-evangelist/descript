@@ -1,0 +1,41 @@
+{
+  "opencollection": "1.0.0",
+  "info": {
+    "name": "Descript API Endpoints Export from Descript API",
+    "version": "1.2"
+  },
+  "items": [
+    {
+      "info": {
+        "name": "Export from Descript",
+        "type": "folder"
+      },
+      "items": [
+        {
+          "info": {
+            "name": "Get Published Project Metadata",
+            "type": "http"
+          },
+          "http": {
+            "method": "GET",
+            "url": "https://descriptapi.com/v1/published_projects/:publishedProjectSlug",
+            "params": [
+              {
+                "name": "publishedProjectSlug",
+                "value": "",
+                "type": "path",
+                "description": "The unique URL slug identifying the published project"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "token": "{{bearerToken}}"
+            }
+          },
+          "docs": "Retrieve metadata for a published Descript project by its URL slug. This endpoint provides information\nabout the published project including title, duration, publisher details, privacy settings, and subtitles.\n\nThis endpoint requires authentication using a personal token and is subject to rate limiting of 1000\nrequests per hour per user.\n"
+        }
+      ]
+    }
+  ],
+  "bundled": true
+}
