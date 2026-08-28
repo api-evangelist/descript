@@ -4,6 +4,18 @@ description: >-
   Descript is an AI-powered video and audio editing platform. Descript's API lets you programmatically create projects,
   import media, run AI ("Underlord") edits, publish compositions, and export transcripts — all without opening the
   desktop app. The API surfaces the same job model that backs the desktop editor and is currently in early access.
+deliveryModel:
+  model: saas
+  open_source: false
+  commercial: true
+  callable_host: true
+  label: Hosted service · you call their endpoint
+  confidence: high
+  source:
+  - openapi
+  - pricing
+  generated: '2026-08-28'
+  method: derived
 accessModel:
   pricing: freemium
   onboarding: self-serve
