@@ -235,6 +235,9 @@ apis:
   - type: CLI
     url: https://www.npmjs.com/package/@descript/platform-cli
 common:
+  - type: CapabilityMap
+    url: capabilities/descript-capability-edges.yml
+    name: Descript Business Capability Map
   - type: AgenticAccess
     url: agentic-access/descript-agentic-access.yml
   - type: TrustCenter

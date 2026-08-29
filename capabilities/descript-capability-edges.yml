@@ -1,0 +1,26 @@
+slug: descript
+provider: Descript
+generated_by: planning/capability-mapping/scripts/classify_capabilities.py
+model: claude-opus-5
+frame:
+- Media, Entertainment & Telecom Content
+min_confidence: 0.7
+capability_model:
+  source: https://github.com/vincentmakes/turbo-ea-capabilities
+  license: CC-BY-4.0
+  attribution: Turbo EA Capabilities by Vincent Verdet — Turbo EA, https://github.com/vincentmakes/turbo-ea-capabilities,
+    CC BY 4.0
+  notice: NOTICE
+edge_count: 1
+edges:
+- tag: API Endpoints
+  spec_file: descript-api-endpoints-api-openapi.yml
+  capability_id: BC-3700.50
+  capability_id_l1: BC-3700
+  capability_name: Post-Production Management
+  confidence: 0.7
+  evidence: POST /jobs/import/project_media  Import media and sequences; POST /jobs/agent  Agent edit;
+    POST /jobs/publish  Publish project media
+  reason: The job model drives importing source media, AI-assisted editing and publishing of finished
+    compositions — audio/video editing and finishing, i.e. post-production workflow. Job listing/status
+    endpoints are plumbing but the substantive verbs are editing and publishing.
