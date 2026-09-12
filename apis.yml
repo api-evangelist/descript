@@ -236,6 +236,8 @@ apis:
   - type: CLI
     url: https://www.npmjs.com/package/@descript/platform-cli
 common:
+  - type: Website
+    url: https://www.descript.com/
   - type: CapabilityMap
     url: capabilities/descript-capability-edges.yml
     name: Descript Business Capability Map
