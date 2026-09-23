@@ -1,4 +1,4 @@
-openapi: 3.0.0
+openapi: 3.2.0
 info:
   description: Descript API documentation.
   version: '1.2'
@@ -46,19 +46,19 @@ paths:
 
         - Recommended to sign URLs for 12-48 hours to reduce chance of failure
 
-        - [Supported file types](https://help.descript.com/hc/en-us/articles/10164098416909-Supported-file-types)
+        - Supported file types
 
 
         ### Direct file upload
 
 
-        Instead of providing a URL, you can upload files directly by specifying `content_type` and `file_size` for a media item. The response will include a signed `upload_url` for each direct upload item. PUT the file bytes to that URL, and the import job will process it automatically. See the [Direct file upload](#tag/Direct-file-upload) guide for a full walkthrough.
+        Instead of providing a URL, you can upload files directly by specifying `content_type` and `file_size` for a media item. The response will include a signed `upload_url` for each direct upload item. PUT the file bytes to that URL, and the import job will process it automatically. See the Direct file upload guide for a full walkthrough.
 
 
         ### Async Operations
 
 
-        Imports run in the background and return a `job_id`. Monitor progress via the [GET /jobs/{job_id}](#operation/getJob) endpoint.
+        Imports run in the background and return a `job_id`. Monitor progress via the GET /jobs/{job_id} endpoint.
 
 
         ### Dynamic webhook
@@ -67,9 +67,7 @@ paths:
         If `callback_url` is provided, Descript will POST the job status to that URL when the job finishes (successfully or not).
 
 
-        The payload will match the format returned by [GET /jobs/{job_id}](#operation/getJob).
-
-        '
+        The payload will match the format returned by GET /jobs/{job_id}.'
       operationId: importProjectMedia
       requestBody:
         content:
@@ -562,7 +560,7 @@ paths:
         ### Async Operations
 
 
-        Agent edits run in the background and return a `job_id`. Monitor progress via the [GET /jobs/{job_id}](#operation/getJob) endpoint.
+        Agent edits run in the background and return a `job_id`. Monitor progress via the GET /jobs/{job_id} endpoint.
 
 
         ### Dynamic webhook
@@ -570,9 +568,7 @@ paths:
 
         If `callback_url` is provided, Descript will POST the job status to that URL when the job completes or fails.
 
-        The payload will match the format returned by [GET /jobs/{job_id}](#operation/getJob).
-
-        '
+        The payload will match the format returned by GET /jobs/{job_id}.'
       operationId: agentEditJob
       requestBody:
         content:
@@ -805,7 +801,47 @@ paths:
       summary: Publish project media
       security:
       - bearerAuth: []
-      description: "Publish a project composition to create a shareable link and download the exported file.\n\nPublishes a specific composition from a project, rendering the output as video or audio\nat the specified resolution. When the job completes successfully the result contains both:\n\n- `share_url`: a public URL that can be used to view the published content on Descript's share site.\n- `download_url`: a time-limited signed URL to download the exported media file directly,\n  along with `download_url_expires_at` indicating when the link expires.\n\n### Republishing\n\nPublishing the same composition a second time automatically reuses the previous share URL,\noverwriting its content — so bookmarks and links handed out for the first publish keep working.\nRepublish matching is keyed on `(project_id, composition_id, media_type)`, so a Video publish\nand an Audio publish of the same composition produce two separate share URLs.\n\n### Async Operations\n\nPublish jobs run in the background and return a `job_id`. Monitor progress via the [GET /jobs/{job_id}](#operation/getJob) endpoint,\nwhich returns the `share_url`, `download_url`, and `download_url_expires_at` fields once the job finishes.\n\n### Dynamic webhook\n\nIf `callback_url` is provided, Descript will POST the job status to that URL when the job completes or fails.\nThe payload will match the format returned by [GET /jobs/{job_id}](#operation/getJob).\n"
+      description: 'Publish a project composition to create a shareable link and download the exported file.
+
+
+        Publishes a specific composition from a project, rendering the output as video or audio
+
+        at the specified resolution. When the job completes successfully the result contains both:
+
+
+        - `share_url`: a public URL that can be used to view the published content on Descript''s share site.
+
+        - `download_url`: a time-limited signed URL to download the exported media file directly,
+
+        along with `download_url_expires_at` indicating when the link expires.
+
+
+        ### Republishing
+
+
+        Publishing the same composition a second time automatically reuses the previous share URL,
+
+        overwriting its content — so bookmarks and links handed out for the first publish keep working.
+
+        Republish matching is keyed on `(project_id, composition_id, media_type)`, so a Video publish
+
+        and an Audio publish of the same composition produce two separate share URLs.
+
+
+        ### Async Operations
+
+
+        Publish jobs run in the background and return a `job_id`. Monitor progress via the GET /jobs/{job_id} endpoint,
+
+        which returns the `share_url`, `download_url`, and `download_url_expires_at` fields once the job finishes.
+
+
+        ### Dynamic webhook
+
+
+        If `callback_url` is provided, Descript will POST the job status to that URL when the job completes or fails.
+
+        The payload will match the format returned by GET /jobs/{job_id}.'
       operationId: publishJob
       requestBody:
         content:
@@ -1012,9 +1048,7 @@ paths:
 
         * Filter by `project_id` to see all jobs for a project
 
-        * Filter by `type` to see specific job types (import/project_media, agent)
-
-        '
+        * Filter by `type` to see specific job types (import/project_media, agent)'
       operationId: listJobs
       security:
       - bearerAuth: []
@@ -1141,9 +1175,7 @@ paths:
       description: 'Retrieve the status of any job.
 
 
-        The response format varies based on job type and includes type-specific fields.
-
-        '
+        The response format varies based on job type and includes type-specific fields.'
       operationId: getJob
       parameters:
       - in: path
@@ -1365,9 +1397,7 @@ paths:
       tags:
       - API Endpoints
       summary: Cancel job
-      description: 'Cancel a running job.
-
-        '
+      description: Cancel a running job.
       operationId: cancelJob
       security:
       - bearerAuth: []
@@ -1433,9 +1463,7 @@ paths:
 
         Results are paginated. Use the `cursor` from the response `pagination.next_cursor`
 
-        to fetch subsequent pages.
-
-        '
+        to fetch subsequent pages.'
       operationId: listProjects
       security:
       - bearerAuth: []
@@ -1592,9 +1620,7 @@ paths:
         name, duration, and media type.
 
 
-        Use this to inspect a project''s contents before editing or importing media.
-
-        '
+        Use this to inspect a project''s contents before editing or importing media.'
       operationId: getProject
       security:
       - bearerAuth: []
@@ -1725,9 +1751,7 @@ paths:
         - Check API connectivity without performing any heavy operations
 
 
-        Returns a success response if the token is valid, or a 401 error if the token is invalid or missing.
-
-        '
+        Returns a success response if the token is valid, or a 401 error if the token is invalid or missing.'
       operationId: getStatus
       responses:
         '200':
@@ -1764,155 +1788,130 @@ paths:
                     message: Missing or invalid authentication token
 components:
   schemas:
-    AgentErrorResult:
-      type: object
-      title: AgentErrorResult
-      description: Result when Agent edit failed
-      properties:
-        status:
-          type: string
-          enum:
-          - error
-          description: Indicates the job failed
-          example: error
-        error_message:
-          type: string
-          description: Human-readable error message
-          example: AI agent failed to process the request
-        error_code:
-          type: string
-          description: Machine-readable error code
-          example: agent_execution_failed
-      required:
-      - status
-      - error_message
-    PublishSuccessResult:
-      type: object
-      description: Result when publish completed successfully
-      properties:
-        status:
-          type: string
-          enum:
-          - success
-          description: Indicates successful completion
-        composition_id:
-          type: string
-          description: Identifier of the published composition
-          example: 39677a40-1c43-4c36-8449-46cfbc4de2b5
-        share_url:
-          type: string
-          format: uri
-          description: Public URL to view the published content
-          example: https://share.descript.com/view/abc123
-        download_url:
-          type: string
-          format: uri
-          description: 'Time-limited signed URL to download the original published media file. Present when the job completed successfully and signing succeeded.
+    JobStatus:
+      oneOf:
+      - $ref: '#/components/schemas/ImportJobStatus'
+      - $ref: '#/components/schemas/AgentJobStatus'
+      - $ref: '#/components/schemas/PublishJobStatus'
+      discriminator:
+        propertyName: job_type
+        mapping:
+          import/project_media: '#/components/schemas/ImportJobStatus'
+          agent: '#/components/schemas/AgentJobStatus'
+          publish: '#/components/schemas/PublishJobStatus'
+      description: 'Status of an async job. The response structure varies based on the job type.
 
-            '
-          example: https://storage.googleapis.com/bucket/object?X-Goog-Signature=...
-        download_url_expires_at:
-          type: string
-          format: date-time
-          description: ISO 8601 time when download_url expires (if download_url is set)
-      required:
-      - status
-      - composition_id
-      - share_url
-    Error429:
-      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
-
-        to help you implement proper retry logic:
-
-        - `Retry-After`: Number of seconds to wait before retrying
-
-        - `X-RateLimit-Remaining`: Requests remaining in current window
-
-        - `X-RateLimit-Consumed`: Requests consumed in current window
+        Use the `job_type` field to determine which fields will be present.
 
         '
+    Error400:
       type: object
       properties:
         error:
           type: string
-          description: Error code indicating rate limit was exceeded
-          example: rate_limit_exceeded
+          example: invalid_input
         message:
           type: string
-          description: Human-readable error message
-          example: Too many requests
+          example: Invalid request body
       required:
       - error
       - message
-    ImportErrorResult:
+    AgentJobStatus:
       type: object
-      title: ImportErrorResult
-      description: Result when job failed completely
+      description: Status of an Agent edit job
       properties:
-        status:
+        job_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the job
+          example: 6dc3f30a-58c2-4174-96a6-dc18cf3c7776
+        job_type:
           type: string
           enum:
-          - error
-          description: Job failed completely
-          example: error
-        error_message:
-          type: string
-          description: Human-readable error message
-          example: Failed to import media files
-        error_code:
-          type: string
-          description: Machine-readable error code
-          example: import_failed
-      required:
-      - status
-      - error_message
-    AgentSuccessResult:
-      type: object
-      title: AgentSuccessResult
-      description: Result when Agent edit completed successfully
-      properties:
-        status:
+          - agent
+          description: Type of job
+          example: agent
+        job_state:
           type: string
           enum:
-          - success
-          description: Indicates successful completion
-          example: success
-        agent_response:
+          - queued
+          - running
+          - stopped
+          - cancelled
+          description: 'Current state of the job:
+
+            - queued: Job is waiting to start
+
+            - running: Job is actively processing
+
+            - stopped: Job has finished (check result.status for outcome)
+
+            - cancelled: Job was cancelled by user
+
+            '
+          example: stopped
+        created_at:
           type: string
-          description: AI response describing what was done
-          example: I added Studio Sound to all 3 clips in your composition
-        project_changed:
-          type: boolean
-          description: Whether the agent made modifications to the project
-          example: true
-        media_seconds_used:
-          type: integer
-          description: Media minutes (in seconds) consumed by this operation
-          example: 34
-        ai_credits_used:
-          type: integer
-          description: AI credits consumed by this operation
-          example: 5
+          format: date-time
+          description: When the job was created
+          example: '2025-11-18T10:30:00Z'
+        stopped_at:
+          type: string
+          format: date-time
+          description: When the job stopped (only present when job_state is stopped or cancelled)
+          example: '2025-11-18T10:35:00Z'
+        drive_id:
+          type: string
+          format: uuid
+          description: The drive ID
+          example: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
+        project_id:
+          type: string
+          format: uuid
+          description: The project ID
+          example: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+        project_url:
+          type: string
+          format: uri
+          description: URL to access the project in Descript web app
+          example: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+        progress:
+          type: object
+          description: Progress information for the workflow (only present when job_state is running)
+          properties:
+            label:
+              type: string
+              description: Human-readable label describing the current action
+              example: Applying Studio Sound to clip 2...
+            percent:
+              type: integer
+              description: Percentage of the workflow that has been completed
+              example: 50
+            last_update_at:
+              type: string
+              format: date-time
+              description: When the progress was last updated
+              example: '2025-11-18T10:32:00Z'
+          required:
+          - label
+        result:
+          description: Job result (only present when job_state is stopped)
+          oneOf:
+          - $ref: '#/components/schemas/AgentSuccessResult'
+          - $ref: '#/components/schemas/AgentErrorResult'
+          discriminator:
+            propertyName: status
+            mapping:
+              success: '#/components/schemas/AgentSuccessResult'
+              error: '#/components/schemas/AgentErrorResult'
       required:
-      - status
-      - agent_response
-      - project_changed
-    PublishErrorResult:
-      type: object
-      description: Result when publish failed
-      properties:
-        status:
-          type: string
-          enum:
-          - error
-          description: Indicates the publish job failed
-        error_message:
-          type: string
-          description: Human-readable error message
-          example: Export failed during render
-      required:
-      - status
-      - error_message
+      - job_id
+      - job_type
+      - job_state
+      - created_at
+      - drive_id
+      - project_id
+      - project_url
     PublishJobStatus:
       type: object
       description: Status of a publish job
@@ -2017,6 +2016,225 @@ components:
       - drive_id
       - project_id
       - project_url
+    Error402:
+      type: object
+      properties:
+        error:
+          type: string
+          example: payment_required
+        message:
+          type: string
+          example: Insufficient media minutes to start the job
+      required:
+      - error
+      - message
+    Error429:
+      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
+
+        to help you implement proper retry logic:
+
+        - `Retry-After`: Number of seconds to wait before retrying
+
+        - `X-RateLimit-Remaining`: Requests remaining in current window
+
+        - `X-RateLimit-Consumed`: Requests consumed in current window
+
+        '
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code indicating rate limit was exceeded
+          example: rate_limit_exceeded
+        message:
+          type: string
+          description: Human-readable error message
+          example: Too many requests
+      required:
+      - error
+      - message
+    AgentErrorResult:
+      type: object
+      title: AgentErrorResult
+      description: Result when Agent edit failed
+      properties:
+        status:
+          type: string
+          enum:
+          - error
+          description: Indicates the job failed
+          example: error
+        error_message:
+          type: string
+          description: Human-readable error message
+          example: AI agent failed to process the request
+        error_code:
+          type: string
+          description: Machine-readable error code
+          example: agent_execution_failed
+      required:
+      - status
+      - error_message
+    ImportErrorResult:
+      type: object
+      title: ImportErrorResult
+      description: Result when job failed completely
+      properties:
+        status:
+          type: string
+          enum:
+          - error
+          description: Job failed completely
+          example: error
+        error_message:
+          type: string
+          description: Human-readable error message
+          example: Failed to import media files
+        error_code:
+          type: string
+          description: Machine-readable error code
+          example: import_failed
+      required:
+      - status
+      - error_message
+    AgentSuccessResult:
+      type: object
+      title: AgentSuccessResult
+      description: Result when Agent edit completed successfully
+      properties:
+        status:
+          type: string
+          enum:
+          - success
+          description: Indicates successful completion
+          example: success
+        agent_response:
+          type: string
+          description: AI response describing what was done
+          example: I added Studio Sound to all 3 clips in your composition
+        project_changed:
+          type: boolean
+          description: Whether the agent made modifications to the project
+          example: true
+        media_seconds_used:
+          type: integer
+          description: Media minutes (in seconds) consumed by this operation
+          example: 34
+        ai_credits_used:
+          type: integer
+          description: AI credits consumed by this operation
+          example: 5
+      required:
+      - status
+      - agent_response
+      - project_changed
+    ImportSuccessResult:
+      type: object
+      title: ImportSuccessResult
+      description: Result when media was imported (fully or partially)
+      properties:
+        status:
+          type: string
+          enum:
+          - success
+          - partial
+          description: '- success: All media imported successfully
+
+            - partial: Some media imported successfully, some failed
+
+            '
+          example: success
+        media_status:
+          type: object
+          description: 'Status of each media item in the import.
+
+            Keys are the media reference IDs from the request.
+
+            '
+          additionalProperties:
+            type: object
+            description: Status information for a single media import
+            properties:
+              status:
+                type: string
+                enum:
+                - success
+                - failed
+                description: Status of this individual media import
+              duration_seconds:
+                type: number
+                format: float
+                description: Duration of the imported media in seconds (only present for successful imports)
+                example: 125.5
+              error_message:
+                type: string
+                description: Error message if the import failed (only present for failed imports)
+                example: URL is not accessible or does not support Range requests
+            required:
+            - status
+          example:
+            Misc/intro.mp4:
+              status: success
+              duration_seconds: 10.5
+            demo.mp4:
+              status: success
+              duration_seconds: 125
+        media_seconds_used:
+          type: integer
+          description: Total media seconds consumed by this import
+          example: 75
+        created_compositions:
+          type: array
+          description: Compositions created during import
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: 0daabc7a-437a-43eb-b04b-b398d502f393
+              name:
+                type: string
+                example: Rough Cut
+      required:
+      - status
+      - media_status
+      - media_seconds_used
+    Error404:
+      type: object
+      properties:
+        error:
+          type: string
+          example: not_found
+        message:
+          type: string
+          example: Resource not found
+      required:
+      - error
+      - message
+    Error401:
+      type: object
+      properties:
+        error:
+          type: string
+          example: unauthorized
+        message:
+          type: string
+          example: Missing or invalid authentication token
+      required:
+      - error
+      - message
+    Error403:
+      type: object
+      properties:
+        error:
+          type: string
+          example: forbidden
+        message:
+          type: string
+          example: User does not have access to this resource
+      required:
+      - error
+      - message
     ImportJobStatus:
       type: object
       description: Status of an import job
@@ -2113,249 +2331,55 @@ components:
       - drive_id
       - project_id
       - project_url
-    Error404:
+    PublishSuccessResult:
       type: object
-      properties:
-        error:
-          type: string
-          example: not_found
-        message:
-          type: string
-          example: Resource not found
-      required:
-      - error
-      - message
-    AgentJobStatus:
-      type: object
-      description: Status of an Agent edit job
-      properties:
-        job_id:
-          type: string
-          format: uuid
-          description: Unique identifier for the job
-          example: 6dc3f30a-58c2-4174-96a6-dc18cf3c7776
-        job_type:
-          type: string
-          enum:
-          - agent
-          description: Type of job
-          example: agent
-        job_state:
-          type: string
-          enum:
-          - queued
-          - running
-          - stopped
-          - cancelled
-          description: 'Current state of the job:
-
-            - queued: Job is waiting to start
-
-            - running: Job is actively processing
-
-            - stopped: Job has finished (check result.status for outcome)
-
-            - cancelled: Job was cancelled by user
-
-            '
-          example: stopped
-        created_at:
-          type: string
-          format: date-time
-          description: When the job was created
-          example: '2025-11-18T10:30:00Z'
-        stopped_at:
-          type: string
-          format: date-time
-          description: When the job stopped (only present when job_state is stopped or cancelled)
-          example: '2025-11-18T10:35:00Z'
-        drive_id:
-          type: string
-          format: uuid
-          description: The drive ID
-          example: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
-        project_id:
-          type: string
-          format: uuid
-          description: The project ID
-          example: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
-        project_url:
-          type: string
-          format: uri
-          description: URL to access the project in Descript web app
-          example: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
-        progress:
-          type: object
-          description: Progress information for the workflow (only present when job_state is running)
-          properties:
-            label:
-              type: string
-              description: Human-readable label describing the current action
-              example: Applying Studio Sound to clip 2...
-            percent:
-              type: integer
-              description: Percentage of the workflow that has been completed
-              example: 50
-            last_update_at:
-              type: string
-              format: date-time
-              description: When the progress was last updated
-              example: '2025-11-18T10:32:00Z'
-          required:
-          - label
-        result:
-          description: Job result (only present when job_state is stopped)
-          oneOf:
-          - $ref: '#/components/schemas/AgentSuccessResult'
-          - $ref: '#/components/schemas/AgentErrorResult'
-          discriminator:
-            propertyName: status
-            mapping:
-              success: '#/components/schemas/AgentSuccessResult'
-              error: '#/components/schemas/AgentErrorResult'
-      required:
-      - job_id
-      - job_type
-      - job_state
-      - created_at
-      - drive_id
-      - project_id
-      - project_url
-    Error401:
-      type: object
-      properties:
-        error:
-          type: string
-          example: unauthorized
-        message:
-          type: string
-          example: Missing or invalid authentication token
-      required:
-      - error
-      - message
-    Error400:
-      type: object
-      properties:
-        error:
-          type: string
-          example: invalid_input
-        message:
-          type: string
-          example: Invalid request body
-      required:
-      - error
-      - message
-    JobStatus:
-      oneOf:
-      - $ref: '#/components/schemas/ImportJobStatus'
-      - $ref: '#/components/schemas/AgentJobStatus'
-      - $ref: '#/components/schemas/PublishJobStatus'
-      discriminator:
-        propertyName: job_type
-        mapping:
-          import/project_media: '#/components/schemas/ImportJobStatus'
-          agent: '#/components/schemas/AgentJobStatus'
-          publish: '#/components/schemas/PublishJobStatus'
-      description: 'Status of an async job. The response structure varies based on the job type.
-
-        Use the `job_type` field to determine which fields will be present.
-
-        '
-    ImportSuccessResult:
-      type: object
-      title: ImportSuccessResult
-      description: Result when media was imported (fully or partially)
+      description: Result when publish completed successfully
       properties:
         status:
           type: string
           enum:
           - success
-          - partial
-          description: '- success: All media imported successfully
-
-            - partial: Some media imported successfully, some failed
+          description: Indicates successful completion
+        composition_id:
+          type: string
+          description: Identifier of the published composition
+          example: 39677a40-1c43-4c36-8449-46cfbc4de2b5
+        share_url:
+          type: string
+          format: uri
+          description: Public URL to view the published content
+          example: https://share.descript.com/view/abc123
+        download_url:
+          type: string
+          format: uri
+          description: 'Time-limited signed URL to download the original published media file. Present when the job completed successfully and signing succeeded.
 
             '
-          example: success
-        media_status:
-          type: object
-          description: 'Status of each media item in the import.
-
-            Keys are the media reference IDs from the request.
-
-            '
-          additionalProperties:
-            type: object
-            description: Status information for a single media import
-            properties:
-              status:
-                type: string
-                enum:
-                - success
-                - failed
-                description: Status of this individual media import
-              duration_seconds:
-                type: number
-                format: float
-                description: Duration of the imported media in seconds (only present for successful imports)
-                example: 125.5
-              error_message:
-                type: string
-                description: Error message if the import failed (only present for failed imports)
-                example: URL is not accessible or does not support Range requests
-            required:
-            - status
-          example:
-            Misc/intro.mp4:
-              status: success
-              duration_seconds: 10.5
-            demo.mp4:
-              status: success
-              duration_seconds: 125
-        media_seconds_used:
-          type: integer
-          description: Total media seconds consumed by this import
-          example: 75
-        created_compositions:
-          type: array
-          description: Compositions created during import
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                example: 0daabc7a-437a-43eb-b04b-b398d502f393
-              name:
-                type: string
-                example: Rough Cut
+          example: https://storage.googleapis.com/bucket/object?X-Goog-Signature=...
+        download_url_expires_at:
+          type: string
+          format: date-time
+          description: ISO 8601 time when download_url expires (if download_url is set)
       required:
       - status
-      - media_status
-      - media_seconds_used
-    Error403:
+      - composition_id
+      - share_url
+    PublishErrorResult:
       type: object
+      description: Result when publish failed
       properties:
-        error:
+        status:
           type: string
-          example: forbidden
-        message:
+          enum:
+          - error
+          description: Indicates the publish job failed
+        error_message:
           type: string
-          example: User does not have access to this resource
+          description: Human-readable error message
+          example: Export failed during render
       required:
-      - error
-      - message
-    Error402:
-      type: object
-      properties:
-        error:
-          type: string
-          example: payment_required
-        message:
-          type: string
-          example: Insufficient media minutes to start the job
-      required:
-      - error
-      - message
+      - status
+      - error_message
   responses:
     Error429Response:
       description: 'Too many requests - rate limit exceeded.
