@@ -37,6 +37,9 @@ modified: '2026-05-19'
 specificationVersion: '0.23'
 type: Index
 access: 3rd-Party
+x-docs-platform: redocly
+x-docs-platform-confidence: medium
+x-docs-platform-checked: 2026-09-25
 tags:
   - Artificial Intelligence
   - Audio Editing
@@ -45,6 +48,7 @@ tags:
   - Podcasting
   - Transcription
   - Video Editing
+  - Audio
 tags_raw:
   - AI
   - Audio Editing
@@ -53,6 +57,7 @@ tags_raw:
   - Podcasting
   - Transcription
   - Video Editing
+  - Audio
 apis:
 - aid: descript:descript-api-endpoints-api
   name: Descript API Endpoints API

@@ -123,6 +123,14 @@ paths:
           $ref: '#/components/responses/Error429Response'
 components:
   schemas:
+    EditInDescriptSchemaPostResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          format: url
+          example: https://web.descript.com/import?nonce=6e3625ca-f885-460d-b2e3-e3faac79c788
+          description: A url for partners to redirect their user to in order to start the import process—expires after 3 hours.
     Error429:
       description: 'Rate limit exceeded response. When this error is returned, the response includes headers
 
@@ -204,14 +212,6 @@ components:
       required:
       - partner_drive_id
       - project_schema
-    EditInDescriptSchemaPostResponse:
-      type: object
-      properties:
-        url:
-          type: string
-          format: url
-          example: https://web.descript.com/import?nonce=6e3625ca-f885-460d-b2e3-e3faac79c788
-          description: A url for partners to redirect their user to in order to start the import process—expires after 3 hours.
   responses:
     Error429Response:
       description: 'Too many requests - rate limit exceeded.

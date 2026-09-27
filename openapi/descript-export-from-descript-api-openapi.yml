@@ -73,20 +73,20 @@ paths:
           $ref: '#/components/responses/Error429Response'
 components:
   schemas:
-    PublishedProjectPrivateError:
+    PublishedProjectForbiddenError:
       type: object
-      description: Error response when published project is private to drive and user is unauthenticated
+      description: Error response when the user does not have access to the published project
       properties:
         error:
           type: string
           enum:
-          - unauthorized
+          - forbidden
           description: Error type identifier
-          example: unauthorized
+          example: forbidden
         message:
           type: string
           description: Human-readable error message
-          example: Private to drive, user must log in to account with access.
+          example: User id 00000000-0000-0000-0000-000000000000 does not have access to this project
     PublishedProjectError:
       type: object
       description: Error response for published project requests
@@ -106,56 +106,6 @@ components:
       required:
       - error
       - message
-    Error429:
-      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
-
-        to help you implement proper retry logic:
-
-        - `Retry-After`: Number of seconds to wait before retrying
-
-        - `X-RateLimit-Remaining`: Requests remaining in current window
-
-        - `X-RateLimit-Consumed`: Requests consumed in current window
-
-        '
-      type: object
-      properties:
-        error:
-          type: string
-          description: Error code indicating rate limit was exceeded
-          example: rate_limit_exceeded
-        message:
-          type: string
-          description: Human-readable error message
-          example: Too many requests
-      required:
-      - error
-      - message
-    PublishedProjectConflictError:
-      type: object
-      description: Error response when published project is in an invalid state
-      properties:
-        error:
-          type: string
-          enum:
-          - conflict
-          description: Error type identifier
-          example: conflict
-        message:
-          type: string
-          description: Human-readable error message
-          example: Published in invalid state
-        state:
-          type: string
-          enum:
-          - processing
-          - failed
-          description: Current state of the published project
-          example: processing
-      required:
-      - error
-      - message
-      - state
     PublishedProjectMetadata:
       type: object
       description: Metadata for a successfully published Descript project
@@ -236,20 +186,70 @@ components:
       - privacy
       - metadata
       - subtitles
-    PublishedProjectForbiddenError:
+    Error429:
+      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
+
+        to help you implement proper retry logic:
+
+        - `Retry-After`: Number of seconds to wait before retrying
+
+        - `X-RateLimit-Remaining`: Requests remaining in current window
+
+        - `X-RateLimit-Consumed`: Requests consumed in current window
+
+        '
       type: object
-      description: Error response when the user does not have access to the published project
+      properties:
+        error:
+          type: string
+          description: Error code indicating rate limit was exceeded
+          example: rate_limit_exceeded
+        message:
+          type: string
+          description: Human-readable error message
+          example: Too many requests
+      required:
+      - error
+      - message
+    PublishedProjectPrivateError:
+      type: object
+      description: Error response when published project is private to drive and user is unauthenticated
       properties:
         error:
           type: string
           enum:
-          - forbidden
+          - unauthorized
           description: Error type identifier
-          example: forbidden
+          example: unauthorized
         message:
           type: string
           description: Human-readable error message
-          example: User id 00000000-0000-0000-0000-000000000000 does not have access to this project
+          example: Private to drive, user must log in to account with access.
+    PublishedProjectConflictError:
+      type: object
+      description: Error response when published project is in an invalid state
+      properties:
+        error:
+          type: string
+          enum:
+          - conflict
+          description: Error type identifier
+          example: conflict
+        message:
+          type: string
+          description: Human-readable error message
+          example: Published in invalid state
+        state:
+          type: string
+          enum:
+          - processing
+          - failed
+          description: Current state of the published project
+          example: processing
+      required:
+      - error
+      - message
+      - state
   responses:
     Error429Response:
       description: 'Too many requests - rate limit exceeded.

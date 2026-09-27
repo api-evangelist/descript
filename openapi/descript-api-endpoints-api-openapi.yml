@@ -1788,130 +1788,18 @@ paths:
                     message: Missing or invalid authentication token
 components:
   schemas:
-    JobStatus:
-      oneOf:
-      - $ref: '#/components/schemas/ImportJobStatus'
-      - $ref: '#/components/schemas/AgentJobStatus'
-      - $ref: '#/components/schemas/PublishJobStatus'
-      discriminator:
-        propertyName: job_type
-        mapping:
-          import/project_media: '#/components/schemas/ImportJobStatus'
-          agent: '#/components/schemas/AgentJobStatus'
-          publish: '#/components/schemas/PublishJobStatus'
-      description: 'Status of an async job. The response structure varies based on the job type.
-
-        Use the `job_type` field to determine which fields will be present.
-
-        '
-    Error400:
+    Error402:
       type: object
       properties:
         error:
           type: string
-          example: invalid_input
+          example: payment_required
         message:
           type: string
-          example: Invalid request body
+          example: Insufficient media minutes to start the job
       required:
       - error
       - message
-    AgentJobStatus:
-      type: object
-      description: Status of an Agent edit job
-      properties:
-        job_id:
-          type: string
-          format: uuid
-          description: Unique identifier for the job
-          example: 6dc3f30a-58c2-4174-96a6-dc18cf3c7776
-        job_type:
-          type: string
-          enum:
-          - agent
-          description: Type of job
-          example: agent
-        job_state:
-          type: string
-          enum:
-          - queued
-          - running
-          - stopped
-          - cancelled
-          description: 'Current state of the job:
-
-            - queued: Job is waiting to start
-
-            - running: Job is actively processing
-
-            - stopped: Job has finished (check result.status for outcome)
-
-            - cancelled: Job was cancelled by user
-
-            '
-          example: stopped
-        created_at:
-          type: string
-          format: date-time
-          description: When the job was created
-          example: '2025-11-18T10:30:00Z'
-        stopped_at:
-          type: string
-          format: date-time
-          description: When the job stopped (only present when job_state is stopped or cancelled)
-          example: '2025-11-18T10:35:00Z'
-        drive_id:
-          type: string
-          format: uuid
-          description: The drive ID
-          example: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
-        project_id:
-          type: string
-          format: uuid
-          description: The project ID
-          example: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
-        project_url:
-          type: string
-          format: uri
-          description: URL to access the project in Descript web app
-          example: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
-        progress:
-          type: object
-          description: Progress information for the workflow (only present when job_state is running)
-          properties:
-            label:
-              type: string
-              description: Human-readable label describing the current action
-              example: Applying Studio Sound to clip 2...
-            percent:
-              type: integer
-              description: Percentage of the workflow that has been completed
-              example: 50
-            last_update_at:
-              type: string
-              format: date-time
-              description: When the progress was last updated
-              example: '2025-11-18T10:32:00Z'
-          required:
-          - label
-        result:
-          description: Job result (only present when job_state is stopped)
-          oneOf:
-          - $ref: '#/components/schemas/AgentSuccessResult'
-          - $ref: '#/components/schemas/AgentErrorResult'
-          discriminator:
-            propertyName: status
-            mapping:
-              success: '#/components/schemas/AgentSuccessResult'
-              error: '#/components/schemas/AgentErrorResult'
-      required:
-      - job_id
-      - job_type
-      - job_state
-      - created_at
-      - drive_id
-      - project_id
-      - project_url
     PublishJobStatus:
       type: object
       description: Status of a publish job
@@ -2016,18 +1904,6 @@ components:
       - drive_id
       - project_id
       - project_url
-    Error402:
-      type: object
-      properties:
-        error:
-          type: string
-          example: payment_required
-        message:
-          type: string
-          example: Insufficient media minutes to start the job
-      required:
-      - error
-      - message
     Error429:
       description: 'Rate limit exceeded response. When this error is returned, the response includes headers
 
@@ -2075,28 +1951,6 @@ components:
       required:
       - status
       - error_message
-    ImportErrorResult:
-      type: object
-      title: ImportErrorResult
-      description: Result when job failed completely
-      properties:
-        status:
-          type: string
-          enum:
-          - error
-          description: Job failed completely
-          example: error
-        error_message:
-          type: string
-          description: Human-readable error message
-          example: Failed to import media files
-        error_code:
-          type: string
-          description: Machine-readable error code
-          example: import_failed
-      required:
-      - status
-      - error_message
     AgentSuccessResult:
       type: object
       title: AgentSuccessResult
@@ -2128,113 +1982,6 @@ components:
       - status
       - agent_response
       - project_changed
-    ImportSuccessResult:
-      type: object
-      title: ImportSuccessResult
-      description: Result when media was imported (fully or partially)
-      properties:
-        status:
-          type: string
-          enum:
-          - success
-          - partial
-          description: '- success: All media imported successfully
-
-            - partial: Some media imported successfully, some failed
-
-            '
-          example: success
-        media_status:
-          type: object
-          description: 'Status of each media item in the import.
-
-            Keys are the media reference IDs from the request.
-
-            '
-          additionalProperties:
-            type: object
-            description: Status information for a single media import
-            properties:
-              status:
-                type: string
-                enum:
-                - success
-                - failed
-                description: Status of this individual media import
-              duration_seconds:
-                type: number
-                format: float
-                description: Duration of the imported media in seconds (only present for successful imports)
-                example: 125.5
-              error_message:
-                type: string
-                description: Error message if the import failed (only present for failed imports)
-                example: URL is not accessible or does not support Range requests
-            required:
-            - status
-          example:
-            Misc/intro.mp4:
-              status: success
-              duration_seconds: 10.5
-            demo.mp4:
-              status: success
-              duration_seconds: 125
-        media_seconds_used:
-          type: integer
-          description: Total media seconds consumed by this import
-          example: 75
-        created_compositions:
-          type: array
-          description: Compositions created during import
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                example: 0daabc7a-437a-43eb-b04b-b398d502f393
-              name:
-                type: string
-                example: Rough Cut
-      required:
-      - status
-      - media_status
-      - media_seconds_used
-    Error404:
-      type: object
-      properties:
-        error:
-          type: string
-          example: not_found
-        message:
-          type: string
-          example: Resource not found
-      required:
-      - error
-      - message
-    Error401:
-      type: object
-      properties:
-        error:
-          type: string
-          example: unauthorized
-        message:
-          type: string
-          example: Missing or invalid authentication token
-      required:
-      - error
-      - message
-    Error403:
-      type: object
-      properties:
-        error:
-          type: string
-          example: forbidden
-        message:
-          type: string
-          example: User does not have access to this resource
-      required:
-      - error
-      - message
     ImportJobStatus:
       type: object
       description: Status of an import job
@@ -2331,6 +2078,225 @@ components:
       - drive_id
       - project_id
       - project_url
+    ImportSuccessResult:
+      type: object
+      title: ImportSuccessResult
+      description: Result when media was imported (fully or partially)
+      properties:
+        status:
+          type: string
+          enum:
+          - success
+          - partial
+          description: '- success: All media imported successfully
+
+            - partial: Some media imported successfully, some failed
+
+            '
+          example: success
+        media_status:
+          type: object
+          description: 'Status of each media item in the import.
+
+            Keys are the media reference IDs from the request.
+
+            '
+          additionalProperties:
+            type: object
+            description: Status information for a single media import
+            properties:
+              status:
+                type: string
+                enum:
+                - success
+                - failed
+                description: Status of this individual media import
+              duration_seconds:
+                type: number
+                format: float
+                description: Duration of the imported media in seconds (only present for successful imports)
+                example: 125.5
+              error_message:
+                type: string
+                description: Error message if the import failed (only present for failed imports)
+                example: URL is not accessible or does not support Range requests
+            required:
+            - status
+          example:
+            Misc/intro.mp4:
+              status: success
+              duration_seconds: 10.5
+            demo.mp4:
+              status: success
+              duration_seconds: 125
+        media_seconds_used:
+          type: integer
+          description: Total media seconds consumed by this import
+          example: 75
+        created_compositions:
+          type: array
+          description: Compositions created during import
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                example: 0daabc7a-437a-43eb-b04b-b398d502f393
+              name:
+                type: string
+                example: Rough Cut
+      required:
+      - status
+      - media_status
+      - media_seconds_used
+    Error401:
+      type: object
+      properties:
+        error:
+          type: string
+          example: unauthorized
+        message:
+          type: string
+          example: Missing or invalid authentication token
+      required:
+      - error
+      - message
+    Error403:
+      type: object
+      properties:
+        error:
+          type: string
+          example: forbidden
+        message:
+          type: string
+          example: User does not have access to this resource
+      required:
+      - error
+      - message
+    Error400:
+      type: object
+      properties:
+        error:
+          type: string
+          example: invalid_input
+        message:
+          type: string
+          example: Invalid request body
+      required:
+      - error
+      - message
+    JobStatus:
+      oneOf:
+      - $ref: '#/components/schemas/ImportJobStatus'
+      - $ref: '#/components/schemas/AgentJobStatus'
+      - $ref: '#/components/schemas/PublishJobStatus'
+      discriminator:
+        propertyName: job_type
+        mapping:
+          import/project_media: '#/components/schemas/ImportJobStatus'
+          agent: '#/components/schemas/AgentJobStatus'
+          publish: '#/components/schemas/PublishJobStatus'
+      description: 'Status of an async job. The response structure varies based on the job type.
+
+        Use the `job_type` field to determine which fields will be present.
+
+        '
+    AgentJobStatus:
+      type: object
+      description: Status of an Agent edit job
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the job
+          example: 6dc3f30a-58c2-4174-96a6-dc18cf3c7776
+        job_type:
+          type: string
+          enum:
+          - agent
+          description: Type of job
+          example: agent
+        job_state:
+          type: string
+          enum:
+          - queued
+          - running
+          - stopped
+          - cancelled
+          description: 'Current state of the job:
+
+            - queued: Job is waiting to start
+
+            - running: Job is actively processing
+
+            - stopped: Job has finished (check result.status for outcome)
+
+            - cancelled: Job was cancelled by user
+
+            '
+          example: stopped
+        created_at:
+          type: string
+          format: date-time
+          description: When the job was created
+          example: '2025-11-18T10:30:00Z'
+        stopped_at:
+          type: string
+          format: date-time
+          description: When the job stopped (only present when job_state is stopped or cancelled)
+          example: '2025-11-18T10:35:00Z'
+        drive_id:
+          type: string
+          format: uuid
+          description: The drive ID
+          example: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
+        project_id:
+          type: string
+          format: uuid
+          description: The project ID
+          example: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+        project_url:
+          type: string
+          format: uri
+          description: URL to access the project in Descript web app
+          example: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+        progress:
+          type: object
+          description: Progress information for the workflow (only present when job_state is running)
+          properties:
+            label:
+              type: string
+              description: Human-readable label describing the current action
+              example: Applying Studio Sound to clip 2...
+            percent:
+              type: integer
+              description: Percentage of the workflow that has been completed
+              example: 50
+            last_update_at:
+              type: string
+              format: date-time
+              description: When the progress was last updated
+              example: '2025-11-18T10:32:00Z'
+          required:
+          - label
+        result:
+          description: Job result (only present when job_state is stopped)
+          oneOf:
+          - $ref: '#/components/schemas/AgentSuccessResult'
+          - $ref: '#/components/schemas/AgentErrorResult'
+          discriminator:
+            propertyName: status
+            mapping:
+              success: '#/components/schemas/AgentSuccessResult'
+              error: '#/components/schemas/AgentErrorResult'
+      required:
+      - job_id
+      - job_type
+      - job_state
+      - created_at
+      - drive_id
+      - project_id
+      - project_url
     PublishSuccessResult:
       type: object
       description: Result when publish completed successfully
@@ -2364,6 +2330,18 @@ components:
       - status
       - composition_id
       - share_url
+    Error404:
+      type: object
+      properties:
+        error:
+          type: string
+          example: not_found
+        message:
+          type: string
+          example: Resource not found
+      required:
+      - error
+      - message
     PublishErrorResult:
       type: object
       description: Result when publish failed
@@ -2377,6 +2355,28 @@ components:
           type: string
           description: Human-readable error message
           example: Export failed during render
+      required:
+      - status
+      - error_message
+    ImportErrorResult:
+      type: object
+      title: ImportErrorResult
+      description: Result when job failed completely
+      properties:
+        status:
+          type: string
+          enum:
+          - error
+          description: Job failed completely
+          example: error
+        error_message:
+          type: string
+          description: Human-readable error message
+          example: Failed to import media files
+        error_code:
+          type: string
+          description: Machine-readable error code
+          example: import_failed
       required:
       - status
       - error_message
