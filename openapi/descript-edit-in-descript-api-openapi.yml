@@ -123,31 +123,6 @@ paths:
           $ref: '#/components/responses/Error429Response'
 components:
   schemas:
-    Error429:
-      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
-
-        to help you implement proper retry logic:
-
-        - `Retry-After`: Number of seconds to wait before retrying
-
-        - `X-RateLimit-Remaining`: Requests remaining in current window
-
-        - `X-RateLimit-Consumed`: Requests consumed in current window
-
-        '
-      type: object
-      properties:
-        error:
-          type: string
-          description: Error code indicating rate limit was exceeded
-          example: rate_limit_exceeded
-        message:
-          type: string
-          description: Human-readable error message
-          example: Too many requests
-      required:
-      - error
-      - message
     EditInDescriptSchemaPostBody:
       type: object
       properties:
@@ -204,6 +179,31 @@ components:
       required:
       - partner_drive_id
       - project_schema
+    Error429:
+      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
+
+        to help you implement proper retry logic:
+
+        - `Retry-After`: Number of seconds to wait before retrying
+
+        - `X-RateLimit-Remaining`: Requests remaining in current window
+
+        - `X-RateLimit-Consumed`: Requests consumed in current window
+
+        '
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code indicating rate limit was exceeded
+          example: rate_limit_exceeded
+        message:
+          type: string
+          description: Human-readable error message
+          example: Too many requests
+      required:
+      - error
+      - message
     EditInDescriptSchemaPostResponse:
       type: object
       properties:
