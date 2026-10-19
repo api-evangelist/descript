@@ -16,9 +16,5 @@
     "descript-openapi.yml: upgraded openapi 3.0.0 -> OpenAPI 3.2.0",
     "apis.yml register: already-registered"
   ],
-  "skipped": [
-    "descript-api-endpoints-api-openapi.yml: previously refined output, superseded by openapi/_original/",
-    "descript-edit-in-descript-api-openapi.yml: previously refined output, superseded by openapi/_original/",
-    "descript-export-from-descript-api-openapi.yml: previously refined output, superseded by openapi/_original/"
-  ]
+  "skipped": []
 }

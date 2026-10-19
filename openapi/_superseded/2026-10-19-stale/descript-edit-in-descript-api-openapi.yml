@@ -1,0 +1,265 @@
+openapi: 3.2.0
+info:
+  description: Descript API documentation.
+  version: '1.2'
+  title: Edit in Descript API
+  x-logo:
+    url: assets/descript-logo.svg
+    altText: Descript
+  license:
+    name: Proprietary
+    url: https://www.descript.com/terms
+servers:
+- url: https://descriptapi.com/v1
+tags:
+- name: Edit in Descript
+  description: '> **Note:** The Edit in Descript integration requires contacting Descript for access.'
+paths:
+  /edit_in_descript/schema:
+    post:
+      tags:
+      - Edit in Descript
+      summary: Create Import URL
+      description: 'Create an Import URL by sending a Project schema to Descript API from your service''s backend.
+
+
+        ### Import Schema
+
+        Our import schemas are specified as a minimal JSON list of files which is detailed in full at the bottom of this
+
+        section. At it''s smallest, the request body looks like:
+
+
+        ```
+
+        {
+
+        "partner_drive_id": "162c61d1-6ced-4b25-a622-7dba922983ee",
+
+        "project_schema": {
+
+        "schema_version": "1.0.0",
+
+        "files": [{"uri": "https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955"}]
+
+        }
+
+        }
+
+        ```
+
+
+        ### File Access
+
+        The file paths provided in the schema need to either be public or pre-signed URIs with enough time before
+
+        expiration for failures and retries, we suggest URIs that won''t expire for 48 hours. We ask that the files have
+
+        already been saved when the import link is generated to minimize cases where we''re waiting for eventually
+
+        consistent storage of files that will never be written. We will, however, wait for eventual consistency of the
+
+        storage layer and retry fetching files before eventually timing out.
+
+
+        Files must be hosted on preapproved hosts as our import process has an allow list which it checks URIs against.
+
+        Files will be requested with `User-Agent: Descriptbot/1.0` (version may change) for tracking purposes.
+
+
+        ### Import link expiration
+
+        Import links are no longer valid after a user imports their data once. Viewing an already used import link will
+
+        not allow for importing again and will not provide access to a previously created Descript Project. Partners are
+
+        able to generate a new import link at any time, regardless of if a previous import link has been used.
+
+
+        The API does not currently provide partners with a link to the Descript Project, though users will be redirected
+
+        to it from Descript''s web interface the first time they import files, and can always find the Project in Descript.
+
+
+        Import links expire after 3 hours and attempting to use an import link after the pre-signed links in the schema
+
+        file have expired will result in an error, so we recommend generating the import link after the user has clicked
+
+        the Edit in Descript button.
+
+
+        ### Supported media specification
+
+        We recommend sending the highest quality, uncompressed versions of files available to you. If you have multiple
+
+        tracks, we recommend prioritizing sending us the full multi-track sequence over a combined file.
+
+
+        * Audio: WAV, FLAC, AAC, MP3
+
+        * Video: h264, HEVC (container: MOV, MP4)'
+      operationId: postEditInDescriptSchema
+      security:
+      - bearerAuth: []
+      requestBody:
+        description: Edit in Descript schema POST body.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditInDescriptSchemaPostBody'
+      responses:
+        '201':
+          description: Successful operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EditInDescriptSchemaPostResponse'
+        '400':
+          description: Invalid input.
+        '403':
+          description: Associated drive does not have Edit in Descript permissions.
+        '429':
+          $ref: '#/components/responses/Error429Response'
+components:
+  responses:
+    Error429Response:
+      description: 'Too many requests - rate limit exceeded.
+
+        Use the `Retry-After` header to determine when to retry.
+
+        '
+      headers:
+        Retry-After:
+          description: Number of seconds to wait before retrying the request
+          schema:
+            type: integer
+          example: 30
+        X-RateLimit-Remaining:
+          description: Number of requests remaining in the current rate limit window
+          schema:
+            type: integer
+          example: 0
+        X-RateLimit-Consumed:
+          description: Number of requests consumed in the current rate limit window
+          schema:
+            type: integer
+          example: 100
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error429'
+          examples:
+            rate_limit:
+              summary: Rate limit exceeded
+              value:
+                error: rate_limit_exceeded
+                message: Too many requests. Please try again later.
+  schemas:
+    EditInDescriptSchemaPostResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          format: url
+          example: https://web.descript.com/import?nonce=6e3625ca-f885-460d-b2e3-e3faac79c788
+          description: A url for partners to redirect their user to in order to start the import process—expires after 3 hours.
+    EditInDescriptSchemaPostBody:
+      type: object
+      properties:
+        partner_drive_id:
+          type: string
+          format: uuid
+          description: The drive id associated with the auth token.
+          example: aa3b2d8d-e5ca-41c2-8801-683328293fb9
+        project_schema:
+          type: object
+          description: The Project schema
+          properties:
+            schema_version:
+              type: string
+              format: string
+              description: Schema version id.
+              example: 1.0.0
+            source_id:
+              type: string
+              format: string
+              description: External source id to be included in Descript export pages, see Export from Descript section for details. This ID is not currently used to deduplicate data coming into Descript, a new Project is created for each import.
+              example: 06b3f5bb-68a2-468a-a5d9-df155c1e3588
+            files:
+              type: array
+              description: List of remote files to import into Descript.
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    format: string
+                    description: A name for the file.
+                  uri:
+                    type: string
+                    format: url
+                    description: A public/pre-signed uri to the audio or video asset, see supported media specifications section.
+                  start_offset:
+                    type: object
+                    description: The amount of time into the Project's timeline this audio or video file should start at.
+                    properties:
+                      seconds:
+                        type: number
+                        description: Float number of seconds into the timeline.
+                example:
+                  name: Jane's studio recording
+                  uri: https://descriptusercontent.com/jane.wav?signature=d182bca64bf94a1483d2fd16b579f955
+                  start_offset:
+                    seconds: 10
+                required:
+                - uri
+          required:
+          - schema_version
+          - files
+      required:
+      - partner_drive_id
+      - project_schema
+    Error429:
+      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
+
+        to help you implement proper retry logic:
+
+        - `Retry-After`: Number of seconds to wait before retrying
+
+        - `X-RateLimit-Remaining`: Requests remaining in current window
+
+        - `X-RateLimit-Consumed`: Requests consumed in current window
+
+        '
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code indicating rate limit was exceeded
+          example: rate_limit_exceeded
+        message:
+          type: string
+          description: Human-readable error message
+          example: Too many requests
+      required:
+      - error
+      - message
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Personal API token created in Descript Settings → API Tokens. See the Authentication section for details.
+x-tagGroups:
+- name: Early Access Public API
+  tags:
+  - Getting started
+  - Using the CLI
+  - API Endpoints
+  - Direct file upload
+  - Authentication
+  - Rate Limiting
+- name: Partner APIs
+  tags:
+  - Edit in Descript
+  - Export from Descript

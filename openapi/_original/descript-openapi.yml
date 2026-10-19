@@ -13,7 +13,192 @@ servers:
   - url: https://descriptapi.com/v1
 tags:
   - name: Getting started
-    description: "> **Early Access:** These APIs are still under active development, and may change and evolve over time. We're thankful for your input, and excited to build with you.\n\nThe Descript API lets you programmatically create projects, import media, and edit your projects — all without opening the app.\n\nTo learn more, visit [descript.com/api](https://descript.com/api).\n\n## Create an API token\n\n1. In Descript, open **Settings** and select **API tokens** from the sidebar. Then click **Create token**.\n\n![Navigate to Settings > API tokens and click Create token](assets/token1.png)\n\n2. Give your token a name and select the Drive it should be associated with. Click **Create token**.\n\n<img src=\"assets/token2.png\" alt=\"Name your token and select a Drive\" width=\"500\" />\n\n3. Copy your token and store it in a safe place. You won't be able to view it again. If you lose it, you'll need to generate a new one.\n\n<img src=\"assets/token3.png\" alt=\"Copy and save your API token\" width=\"500\" />\n\n> **Warning:** Treat your API token like a password. Anyone with your token can make API requests on your behalf using your account permissions. Never share your token publicly or commit it to source control.\n\nInclude the token as a Bearer token in the `Authorization` header of your API requests.\n\n## Import media into a new project\n\nYou can create a new project, import media, and place the media into a composition all in one API request using the [import endpoint](#operation/importProjectMedia). This step also transcribes and processes the media so that it's ready for you or the agent to edit.\n\nTo import files, pass in public or pre-signed URIs. Currently, the API does not support uploading a file directly. To test the API with an example file, use the demo video included in the sample request below.\n\nImporting and processing is an asynchronous job, so the response payload will contain a `job_id` for you to [query the status of the job](#operation/getJob) and information about the newly created project. Note that `project_id` and `project_url` are returned immediately alongside `job_id`, but opening the project in Descript will not always show the API's processing state in real time. To prevent unintended changes, we recommend that you do not make any changes to the project until the job has stopped.\n\n\n\n**Request**\n\n```bash\ncurl -X POST https://descriptapi.com/v1/jobs/import/project_media \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"project_name\": \"My First Video\",\n    \"add_media\": {\n      \"demo.mp4\": {\n        \"url\": \"https://test-files.descriptapi.com/demo-video.mp4\"\n      }\n    },\n    \"add_compositions\": [\n      {\n        \"name\": \"Demo Video\",\n        \"clips\": [\n          { \"media\": \"demo.mp4\" }\n        ]\n      }\n    ]\n  }'\n```\n\n**Response**\n\n```json\n{\n  \"job_id\": \"project-media-import-9d635d5b\",\n  \"drive_id\": \"c9c5c47e\",\n  \"project_id\": \"e2f89ce6\",\n  \"project_url\": \"https://web.descript.com/e2f89ce6\"\n}\n```\n\n## Check for import completion\n\nPoll the [job status endpoint](#operation/getJob) using the `job_id` from the last step to check whether the import job is finished processing. When it is, you'll see `job_state: \"stopped\"`. You can then check the `results` object to see its full results.\n\nYou can also pass in a `callback_url` as a part of the first import request, and we'll ping you when the job has stopped with the same response payload.\n\n**Request**\n\n```bash\ncurl https://descriptapi.com/v1/jobs/project-media-import-9d635d5b \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\"\n```\n\n**Response**\n\n```json\n{\n  \"job_id\": \"project-media-import-9d635d5b\",\n  \"job_type\": \"import/project_media\",\n  \"job_state\": \"stopped\",\n  \"project_id\": \"e2f89ce6\",\n  \"project_url\": \"https://web.descript.com/e2f89ce6\",\n  \"result\": {\n    \"status\": \"success\",\n    \"media_status\": {\n      \"main.mp4\": {\n        \"status\": \"success\",\n        \"duration_seconds\": 69.477006\n      }\n    },\n    \"created_compositions\": [\n      { \"id\": \"f8e5088a-4d53-4aab-9d4f-c6624b7d7622\", \"name\": \"Demo Video\" }\n    ]\n  }\n}\n```\n\n## Prompt for edits with Agent Underlord\n\nOnce your media is imported, you can use the [agent edit endpoint](#operation/agentEditJob) to prompt Underlord for edits, just as you would in the app. Because it's an API, conversation and follow up questions aren't practical. So we recommend framing your edits as a one-shot prompt with all the information the agent needs.\n\nEditing can take some time, so the response also returns a `job_id` that you can use to [check the status of the job](#operation/getJob). You can also pass in a `callback_url` as a part of an agent request, and we'll ping you when the job has stopped.\n\n**Request**\n\n```bash\ncurl -X POST https://descriptapi.com/v1/jobs/agent \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"project_id\": \"e2f89ce6\",\n    \"prompt\": \"Add studio sound and captions\"\n  }'\n```\n\n**Response**\n\n```json\n{\n  \"job_id\": \"project-agent-edit-e2f89ce6\",\n  \"drive_id\": \"c9c5c47e\",\n  \"project_id\": \"e2f89ce6\",\n  \"project_url\": \"https://web.descript.com/e2f89ce6\"\n}\n```\n\n## Wait for the agent to complete its job\n\nPoll the [job status endpoint](#operation/getJob) using the `job_id`. When the agent job completes successfully, the response includes a summary of what it accomplished (see the `result.agent_response` field). Use the project URL to open the project in Descript and review Underlord's changes.\n\n**Request**\n\n```bash\ncurl https://descriptapi.com/v1/jobs/project-agent-edit-e2f89ce6 \\\n  -H \"Authorization: Bearer YOUR_API_TOKEN\"\n```\n\nOnce the agent job is successfully complete, you’ll see a response from the agent with a brief summary of what it accomplished. You can then use the project url to review its changes directly in Descript.\n\n**Response**\n\n```json\n{\n\t\"job_id\":\"project-agent-edit-e2f89ce6\",\n\t\"job_type\":\"agent\",\n  \"project_id\":\"YOUR_PROJECT_ID\",\n\t\"project_url\":\"https://web.descript.com/e2f89ce6\",\n\t\"job_state\":\"stopped\",\n\t\"created_at\":\"2026-02-09T05:42:27.554Z\",\n\t\"stopped_at\":\"2026-02-09T05:43:15.296Z\",\n\t\"drive_id\":\"1df135a5-dc4a-4dc3-8f7d-681cfbe961e4\",\n\t\"result\":{\n\t\t\"status\":\"success\",\n    \"agent_response\":\"Done! I've applied Studio Sound to enhance your audio quality and added classic karaoke-style captions to your video.\",\n\t\t\"project_changed\":true,\n\t\t\"media_seconds_used\":0,\n\t\t\"ai_credits_used\":32\n  }\n}\n```\n"
+    description: |
+      The Descript API lets you programmatically create projects, import media, and edit your projects — all without opening the app.
+
+      To learn more, visit [descript.com/api](https://descript.com/api).
+
+      ## Create an API token
+
+      1. In Descript, open **Settings** and select **API tokens** from the sidebar. Then click **Create token**.
+
+      ![Navigate to Settings > API tokens and click Create token](assets/token1.png)
+
+      2. Give your token a name and select the Drive it should be associated with. Click **Create token**.
+
+      <img src="assets/token2.png" alt="Name your token and select a Drive" width="500" />
+
+      3. Copy your token and store it in a safe place. You won't be able to view it again. If you lose it, you'll need to generate a new one.
+
+      <img src="assets/token3.png" alt="Copy and save your API token" width="500" />
+
+      > **Warning:** Treat your API token like a password. Anyone with your token can make API requests on your behalf using your account permissions. Never share your token publicly or commit it to source control.
+
+      Include the token as a Bearer token in the `Authorization` header of your API requests.
+
+      ## Import media into a new project
+
+      You can create a new project, import media, and place the media into a composition all in one API request using the [import endpoint](#operation/importProjectMedia). This step also transcribes and processes the media so that it's ready for you or the agent to edit.
+
+      To import a file that is already on the internet, pass a public or pre-signed URL, as in the sample below. To upload a file from your machine, omit `url` and send `content_type` and `file_size` instead. The response includes `upload_urls`. PUT the file bytes to the signed URL, then poll the job. The [Direct file upload](#tag/Direct-file-upload) guide walks through that flow.
+
+      Importing and processing is an asynchronous job, so the response payload will contain a `job_id` for you to [query the status of the job](#operation/getJob) and information about the newly created project. Note that `project_id` and `project_url` are returned immediately alongside `job_id`, but opening the project in Descript will not always show the API's processing state in real time. To prevent unintended changes, we recommend that you do not make any changes to the project until the job has stopped.
+
+
+
+      **Request**
+
+      ```bash
+      curl -X POST https://descriptapi.com/v1/jobs/import/project_media \
+        -H "Authorization: Bearer YOUR_API_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "project_name": "My First Video",
+          "add_media": {
+            "demo.mp4": {
+              "url": "https://test-files.descriptapi.com/demo-video.mp4"
+            }
+          },
+          "add_compositions": [
+            {
+              "name": "Demo Video",
+              "clips": [
+                { "media": "demo.mp4" }
+              ]
+            }
+          ]
+        }'
+      ```
+
+      **Response**
+
+      ```json
+      {
+        "job_id": "project-media-import-9d635d5b",
+        "drive_id": "c9c5c47e",
+        "project_id": "e2f89ce6",
+        "project_url": "https://web.descript.com/e2f89ce6"
+      }
+      ```
+
+      ## Check for import completion
+
+      Poll the [job status endpoint](#operation/getJob) using the `job_id` from the last step to check whether the import job is finished processing. When it is, you'll see `job_state: "stopped"`. You can then check the `results` object to see its full results.
+
+      You can also pass in a `callback_url` as a part of the first import request, and we'll ping you when the job has stopped with the same response payload.
+
+      **Request**
+
+      ```bash
+      curl https://descriptapi.com/v1/jobs/project-media-import-9d635d5b \
+        -H "Authorization: Bearer YOUR_API_TOKEN"
+      ```
+
+      **Response**
+
+      ```json
+      {
+        "job_id": "project-media-import-9d635d5b",
+        "job_type": "import/project_media",
+        "job_state": "stopped",
+        "project_id": "e2f89ce6",
+        "project_url": "https://web.descript.com/e2f89ce6",
+        "result": {
+          "status": "success",
+          "media_status": {
+            "main.mp4": {
+              "status": "success",
+              "duration_seconds": 69.477006
+            }
+          },
+          "created_compositions": [
+            { "id": "f8e5088a-4d53-4aab-9d4f-c6624b7d7622", "name": "Demo Video" }
+          ]
+        }
+      }
+      ```
+
+      ## Prompt for edits with Agent Underlord
+
+      Once your media is imported, use the [agent edit endpoint](#operation/agentEditJob) to prompt Underlord. The response includes a `conversation_id`. To follow up, call the endpoint again with the same `project_id` and that `conversation_id`, plus your next prompt. The agent then sees the earlier turns. A single prompt that includes everything you need also works.
+
+      Editing can take some time, so the response also returns a `job_id` that you can use to [check the status of the job](#operation/getJob). You can also pass in a `callback_url` as a part of an agent request, and we'll ping you when the job has stopped.
+
+      **Request**
+
+      ```bash
+      curl -X POST https://descriptapi.com/v1/jobs/agent \
+        -H "Authorization: Bearer YOUR_API_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "project_id": "e2f89ce6",
+          "prompt": "Add studio sound and captions"
+        }'
+      ```
+
+      **Response**
+
+      ```json
+      {
+        "job_id": "project-agent-edit-e2f89ce6",
+        "drive_id": "c9c5c47e",
+        "project_id": "e2f89ce6",
+        "project_url": "https://web.descript.com/e2f89ce6",
+        "conversation_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "resolved_model": "auto"
+      }
+      ```
+
+      **Follow-up request**
+
+      ```bash
+      curl -X POST https://descriptapi.com/v1/jobs/agent \
+        -H "Authorization: Bearer YOUR_API_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "project_id": "e2f89ce6",
+          "conversation_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "prompt": "Now add captions"
+        }'
+      ```
+
+      ## Wait for the agent to complete its job
+
+      Poll the [job status endpoint](#operation/getJob) using the `job_id`. When the agent job completes successfully, the response includes a summary of what it accomplished (see the `result.agent_response` field). Use the project URL to open the project in Descript and review Underlord's changes.
+
+      **Request**
+
+      ```bash
+      curl https://descriptapi.com/v1/jobs/project-agent-edit-e2f89ce6 \
+        -H "Authorization: Bearer YOUR_API_TOKEN"
+      ```
+
+      Once the agent job is successfully complete, you’ll see a response from the agent with a brief summary of what it accomplished. You can then use the project url to review its changes directly in Descript.
+
+      **Response**
+
+      ```json
+      {
+        "job_id": "project-agent-edit-e2f89ce6",
+        "job_type": "agent",
+        "project_id": "e2f89ce6",
+        "project_url": "https://web.descript.com/e2f89ce6",
+        "job_state": "stopped",
+        "created_at": "2026-02-09T05:42:27.554Z",
+        "stopped_at": "2026-02-09T05:43:15.296Z",
+        "drive_id": "1df135a5-dc4a-4dc3-8f7d-681cfbe961e4",
+        "result": {
+          "status": "success",
+          "agent_response": "Done! I've applied Studio Sound to enhance your audio quality and added classic karaoke-style captions to your video.",
+          "project_changed": true,
+          "media_seconds_used": 0,
+          "ai_credits_used": 32,
+          "conversation_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        }
+      }
+      ```
+
+      If the edit does not complete, the job still reaches `job_state: "stopped"` and `result.status` is `"error"`. `result.error_message` explains why. A single file inside an import job uses a different value: that file's entry in `media_status` has `status` set to `"failed"` when the file does not import.
   - name: Using the CLI
     description: |
       The CLI wraps the API into a simple to use command line tool with interactive flows for setting up authentication, importing, and prompting the agent. It also has built-in polling for job completion.
@@ -264,7 +449,7 @@ tags:
   - name: Export from Descript
     description: |
       Users of Descript currently have three options to export their edited content. They can export files in various
-      formats, share a Descript link, or use our [one-click cloud export](https://help.descript.com/hc/en-us/articles/360043869551-Becoming-a-Supported-Content-Hosting-Partner)
+      formats, share a Descript link, or use our [one-click cloud export](https://help.descript.com/connect-with-us/hosting-partners)
       to publish directly to a partner.
 
       ### Roundtrip Metadata
@@ -285,7 +470,7 @@ paths:
       summary: Import media and sequences
       security:
         - bearerAuth: []
-      description: "Import media files into a new or existing project and create compositions.\n\nThis endpoint can:\n- Create a new project if `project_id` is not provided\n- Import media files from URLs\n- Create multitrack sequences\n- Create compositions (timelines) from existing or new media in the project\n- Trigger transcription and other background processing tasks\n\n### Media URL requirements\n- URLs must be accessible by Descript servers\n- URLs must support HTTP Range requests\n- Recommended to sign URLs for 12-48 hours to reduce chance of failure\n- [Supported file types](https://help.descript.com/hc/en-us/articles/10164098416909-Supported-file-types)\n\n### Direct file upload\n\nInstead of providing a URL, you can upload files directly by specifying `content_type` and `file_size` for a media item. The response will include a signed `upload_url` for each direct upload item. PUT the file bytes to that URL, and the import job will process it automatically. See the [Direct file upload](#tag/Direct-file-upload) guide for a full walkthrough.\n\n### Async Operations\n\nImports\_run in the background and return a `job_id`. Monitor progress via the [GET /jobs/{job_id}](#operation/getJob) endpoint.\n\n### Dynamic webhook\n\nIf `callback_url` is provided, Descript will POST the job status to that URL when the job finishes (successfully or not).\n\nThe payload will match the format returned by [GET /jobs/{job_id}](#operation/getJob).\n"
+      description: "Import media files into a new or existing project and create compositions.\n\nThis endpoint can:\n- Create a new project if `project_id` is not provided\n- Import media files from URLs\n- Create multitrack sequences\n- Create compositions (timelines) from existing or new media in the project\n- Trigger transcription and other background processing tasks\n\n### Media URL requirements\n- URLs must be accessible by Descript servers\n- URLs must support HTTP Range requests\n- Recommended to sign URLs for 12-48 hours to reduce chance of failure\n- [Supported file types](https://help.descript.com/add-and-manage-media/supported-file-types)\n\n### Direct file upload\n\nInstead of providing a URL, you can upload files directly by specifying `content_type` and `file_size` for a media item. The response will include a signed `upload_url` for each direct upload item. PUT the file bytes to that URL, and the import job will process it automatically. See the [Direct file upload](#tag/Direct-file-upload) guide for a full walkthrough.\n\n### Async Operations\n\nImports\_run in the background and return a `job_id`. Monitor progress via the [GET /jobs/{job_id}](#operation/getJob) endpoint.\n\n### Dynamic webhook\n\nIf `callback_url` is provided, Descript will POST the job status to that URL when the job finishes (successfully or not).\n\nThe payload will match the format returned by [GET /jobs/{job_id}](#operation/getJob).\n"
       operationId: importProjectMedia
       requestBody:
         content:
@@ -335,6 +520,22 @@ paths:
                     (when project_id is not provided). Existing folders along the path are reused; missing
                     segments are created automatically.
                   example: Clients/Acme
+                workspace_name:
+                  type: string
+                  description: |
+                    Existing workspace to create the new project in, matched by name (case-insensitive).
+                    Only applicable when creating a new project (when project_id is not provided).
+
+                    Reserved names: `Personal` (your private space) and `General` (the shared drive workspace).
+                    Any other value is looked up as a custom workspace name; unknown names return 404.
+
+                    When omitted, `team_access` is passed through unchanged.
+                    When set to `Personal`, `team_access` must be `none` or omitted.
+                    When set to `General` or a custom workspace name, `team_access` must be
+                    `edit`, `comment`, or `view`; omitting it defaults to `view`, and `none` is rejected.
+
+                    For custom workspaces, the caller must be a member of that workspace.
+                  example: Marketing
                 add_media:
                   type: object
                   description: |
@@ -471,6 +672,14 @@ paths:
                               type: string
                               description: Media reference ID (display name) of the media to add as a clip
                               example: Misc/intro.mp4
+                            mute:
+                              type: boolean
+                              description: |
+                                Mute the track this clip plays on. For a sequence clip, mutes the sequence's own tracks.
+                                For any other clip, mutes the composition's script layer, which silences every
+                                clip on it — including clips already in the composition. Defaults to false.
+                              default: false
+                              example: true
                           additionalProperties: false
                     required:
                       - clips
@@ -571,6 +780,11 @@ paths:
                     format: uuid
                     description: Drive ID where the project is located
                     example: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
+                  drive_name:
+                    type: string
+                    nullable: true
+                    description: Human-readable name of the connected drive (workspace)
+                    example: My Team Workspace
                   project_id:
                     type: string
                     format: uuid
@@ -764,7 +978,14 @@ paths:
                 model:
                   type: string
                   description: |
-                    AI model to use for editing. Defaults to the default model.
+                    AI model to use for editing. Accepts a canonical model id
+                    (e.g. `claude-opus-5.5`) or a friendly alias that tracks the
+                    stable version of a family (e.g. `claude-opus`). Call
+                    [GET /agent/models](#operation/listAgentModels) for the current
+                    set of supported models and aliases.
+
+                    Defaults to `auto` when omitted, which selects a recommended
+                    model for your account.
                 prompt:
                   type: string
                   description: |
@@ -789,6 +1010,16 @@ paths:
                     Optional webhook URL to call when the job completes or fails.
                     Descript will POST the job status (same format as [GET /jobs/{job_id}](#operation/getJob)) to this URL.
                   example: https://example.com/webhooks/descript/job_callback
+                conversation_id:
+                  type: string
+                  format: uuid
+                  description: |
+                    Conversation ID from a previous agent response. Pass it back on your
+                    next call, with the same `project_id`, so the agent sees prior turns.
+                    Omit it to start a new conversation.
+
+                    Requires `project_id`.
+                  example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
               required:
                 - prompt
               additionalProperties: false
@@ -802,7 +1033,7 @@ paths:
                 summary: Add Studio Sound effect
                 value:
                   project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
-                  model: haiku-4.5
+                  model: claude-haiku-5.5
                   prompt: add studio sound to every clip
               remove_filler_words:
                 summary: Remove filler words
@@ -815,6 +1046,12 @@ paths:
                   project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
                   composition_id: 39677a40-1c43-4c36-8449-46cfbc4de2b5
                   prompt: create a 30-second highlight reel with the best moments
+              continue_conversation:
+                summary: Continue a previous conversation
+                value:
+                  project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                  prompt: now also add captions to the video
+                  conversation_id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
               with_callback:
                 summary: Agent job with webhook callback
                 value:
@@ -841,6 +1078,11 @@ paths:
                     format: uuid
                     description: Drive ID where the project is located
                     example: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
+                  drive_name:
+                    type: string
+                    nullable: true
+                    description: Human-readable name of the connected drive (workspace)
+                    example: My Team Workspace
                   project_id:
                     type: string
                     format: uuid
@@ -851,17 +1093,37 @@ paths:
                     format: uri
                     description: URL to access the project in Descript web app
                     example: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                  conversation_id:
+                    type: string
+                    format: uuid
+                    description: |
+                      Conversation ID for this agent run. Always returned on POST — no need
+                      to wait for the job to complete to learn the id. Pass it back as
+                      `conversation_id` on a subsequent call to continue this conversation.
+                    example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+                  resolved_model:
+                    type: string
+                    description: |
+                      Model reported for this request: the canonical id for an explicit
+                      model or alias (e.g. `claude-opus-5.5` for `claude-opus`), or
+                      `auto` for an `auto` request. Lets you confirm the selection
+                      immediately, without waiting for the job result. Matches
+                      `result.resolved_model` on [GET /jobs/{job_id}](#operation/getJob).
+                    example: claude-opus-5.5
                 required:
                   - job_id
                   - drive_id
                   - project_id
                   - project_url
+                  - resolved_model
+                  - conversation_id
         '400':
           description: |
             Invalid input:
             - Malformed request body
-            - Invalid project_id or composition_id
+            - Invalid project_id or composition_id format
             - Empty or invalid prompt
+            - `conversation_id` belongs to a different project
           content:
             application/json:
               schema:
@@ -877,6 +1139,11 @@ paths:
                   value:
                     error: invalid_input
                     message: Invalid project_id format
+                conversation_project_mismatch:
+                  summary: conversation_id belongs to a different project
+                  value:
+                    error: invalid_input
+                    message: Conversation a1b2c3d4-e5f6-7890-abcd-ef1234567890 belongs to a different project
         '401':
           description: Unauthorized - missing or invalid authentication token
           content:
@@ -901,11 +1168,24 @@ paths:
                   value:
                     error: payment_required
                     message: Insufficient AI credits to start the job (100 credits required, 25 available)
+        '403':
+          description: Forbidden - the drive admin has disabled agent usage for this drive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error403'
+              examples:
+                agent_disabled:
+                  summary: Agent usage disabled by admin
+                  value:
+                    error: forbidden
+                    message: Agent usage has been disabled by your admin
         '404':
           description: |
             Not found:
             - Project doesn't exist
-            - Composition doesn't exist (when composition_id is provided)
+            - Composition doesn't exist in the specified project (when composition_id is provided)
+            - `conversation_id` does not match an existing conversation
           content:
             application/json:
               schema:
@@ -917,10 +1197,139 @@ paths:
                     error: not_found
                     message: Project not found
                 composition_not_found:
-                  summary: Composition not found
+                  summary: Composition not found in project
                   value:
                     error: not_found
-                    message: Composition not found
+                    message: No composition matching '5b507b2b-e3ef-4146-a0d0-6741df516973' found in project 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                conversation_not_found:
+                  summary: Conversation not found
+                  value:
+                    error: not_found
+                    message: Conversation a1b2c3d4-e5f6-7890-abcd-ef1234567890 not found
+        '429':
+          $ref: '#/components/responses/Error429Response'
+  /agent/models:
+    get:
+      tags:
+        - API Endpoints
+      summary: List agent models
+      security:
+        - bearerAuth: []
+      description: |
+        List the currently available agent models and the aliases that resolve to them.
+
+        The `model` parameter on [POST /jobs/agent](#operation/agentEditJob) accepts any
+        value listed under `availableModels[].id` or `aliases[].id`. Aliases let you target
+        the latest
+        recommended model for a given tier without chasing version bumps — for example,
+        passing `claude-opus` always routes to whichever Claude Opus version Descript
+        currently recommends.
+
+        The catalog changes as models launch and retire, so this endpoint's live response
+        is the source of truth — the example below is an abridged illustration, not the
+        full list.
+
+        Cost tiers are coarse buckets — `low`, `medium`, `high` — useful for showing
+        users a relative price/performance signal. Exact pricing is reported per job via
+        the `ai_credits_used` field on [GET /jobs/{job_id}](#operation/getJob).
+
+        When `model` is omitted on `POST /jobs/agent`, the request defaults to `auto`, which
+        selects a recommended model for your account. `auto` is a `medium`-cost option. For an
+        `auto` request, `result.resolved_model` on [GET /jobs/{job_id}](#operation/getJob) reports
+        `auto`; for an explicit model or alias it reports the canonical id that ran.
+      operationId: listAgentModels
+      responses:
+        '200':
+          description: Available agent models and aliases
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - availableModels
+                  - aliases
+                properties:
+                  availableModels:
+                    type: array
+                    description: |
+                      Canonical model ids currently advertised by the public agent API,
+                      each tagged with a coarse cost tier.
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - cost
+                      properties:
+                        id:
+                          type: string
+                          description: Canonical model id to pass as `model` on `POST /jobs/agent`.
+                          example: claude-opus-5.5
+                        cost:
+                          type: string
+                          enum:
+                            - low
+                            - medium
+                            - high
+                          description: Relative cost tier for this model.
+                          example: high
+                  aliases:
+                    type: array
+                    description: |
+                      Friendly aliases that resolve to one of the `availableModels` at
+                      request time. Pass any alias `id` as `model` and the agent job
+                      result's `result.resolved_model` (on
+                      [GET /jobs/{job_id}](#operation/getJob)) will report the canonical
+                      id that actually ran.
+                    items:
+                      type: object
+                      required:
+                        - id
+                        - resolvesTo
+                        - description
+                        - cost
+                      properties:
+                        id:
+                          type: string
+                          description: Alias id callers can pass as `model`.
+                          example: claude-opus
+                        resolvesTo:
+                          type: string
+                          description: Canonical model id this alias currently resolves to.
+                          example: claude-opus-5.5
+                        description:
+                          type: string
+                          description: Human-readable description of the alias's intent.
+                          example: Tracks stable Anthropic Claude Opus
+                        cost:
+                          type: string
+                          enum:
+                            - low
+                            - medium
+                            - high
+                          description: Relative cost tier of the model this alias resolves to.
+                          example: high
+              examples:
+                default_models:
+                  summary: Abridged example — call the endpoint for the current list
+                  value:
+                    availableModels:
+                      - id: auto
+                        cost: medium
+                      - id: claude-opus-5.5
+                        cost: high
+                      - id: claude-haiku-5.5
+                        cost: low
+                    aliases:
+                      - id: claude-opus
+                        resolvesTo: claude-opus-5.5
+                        description: Tracks stable Anthropic Claude Opus
+                        cost: high
+        '401':
+          description: Unauthorized - missing or invalid authentication token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
         '429':
           $ref: '#/components/responses/Error429Response'
   /jobs/publish:
@@ -972,8 +1381,15 @@ paths:
                   example: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
                 composition_id:
                   type: string
-                  format: uuid
-                  description: The ID of the composition within the project to publish.
+                  description: |
+                    Composition to publish. If omitted, the first composition that has content is
+                    used, skipping the empty placeholder that leads projects created by an agent or
+                    import job.
+
+                    Accepts any of the following formats:
+                    - A full composition UUID (e.g. `39677a40-1c43-4c36-8449-46cfbc4de2b5`)
+                    - A 5-character short ID from a Descript URL (e.g. `39677`)
+                    - A full Descript project URL (e.g. `https://web.descript.com/{project_id}/39677`)
                   example: 39677a40-1c43-4c36-8449-46cfbc4de2b5
                 media_type:
                   type: string
@@ -981,7 +1397,13 @@ paths:
                     - Video
                     - Audio
                   default: Video
-                  description: Media type of the published output.
+                  description: |
+                    Media type of the published output. Defaults to `Video` when omitted.
+
+                    If the target composition has no video content:
+                    - omitting `media_type` publishes it as `Audio`
+                      (the completed job result reports `media_type: Audio`),
+                    - explicitly requesting `Video` is rejected with a 422.
                 resolution:
                   type: string
                   enum:
@@ -1055,6 +1477,11 @@ paths:
                     format: uuid
                     description: Drive ID where the project is located
                     example: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
+                  drive_name:
+                    type: string
+                    nullable: true
+                    description: Human-readable name of the connected drive (workspace)
+                    example: My Team Workspace
                   project_id:
                     type: string
                     format: uuid
@@ -1076,6 +1503,10 @@ paths:
             - Malformed request body
             - Invalid project_id or composition_id format
             - Invalid media_type or resolution value
+            - The target composition is empty: either the requested `composition_id` names an
+              empty composition, or `composition_id` was omitted and every composition in the
+              project is empty. The message names any compositions that do have content, so
+              you can retry with one of those.
           content:
             application/json:
               schema:
@@ -1091,6 +1522,11 @@ paths:
                   value:
                     error: invalid_input
                     message: '"resolution" must be one of [480p, 720p, 1080p, 1440p, 4K]'
+                empty_composition:
+                  summary: Target composition has no content
+                  value:
+                    error: invalid_input
+                    message: 'Composition 39677a40-1c43-4c36-8449-46cfbc4de2b5 ("Untitled") is empty and cannot be published. Retry with composition_id set to a composition that has content: 5b507b2b-e3ef-4146-a0d0-6741df516973.'
         '401':
           description: Unauthorized - missing or invalid authentication token
           content:
@@ -1119,9 +1555,219 @@ paths:
                   value:
                     error: forbidden
                     message: Forbidden
+        '404':
+          description: |
+            Not found:
+            - Composition doesn't exist in the specified project (when `composition_id` is provided)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error404'
+              examples:
+                composition_not_found:
+                  summary: Composition not found in project
+                  value:
+                    error: not_found
+                    message: No composition matching '5b507b2b-e3ef-4146-a0d0-6741df516973' found in project 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
         '422':
           description: |
-            Unprocessable Entity
+            Unprocessable Entity:
+            - `media_type` was explicitly set to `Video` but the target composition has no
+              video content. Retry with `media_type` set to `Audio` (or omit it to publish
+              as audio).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+              examples:
+                audio_only_video_request:
+                  summary: Audio-only composition requested as video
+                  value:
+                    error: unprocessable_entity
+                    message: Composition <id> has no video content and cannot be published as video. Retry with media_type "Audio".
+        '429':
+          $ref: '#/components/responses/Error429Response'
+  /export/transcript:
+    post:
+      tags:
+        - API Endpoints
+      summary: Export project transcript
+      security:
+        - bearerAuth: []
+      description: |
+        Export the transcript from a project composition.
+
+        Supports plain text, Markdown, HTML, RTF, DOCX, and SRT (SubRip subtitle) formats.
+        Options include speaker labels, timecodes, and markers.
+
+        The response body is the raw transcript file (binary for `docx`,
+        text otherwise) with a `Content-Disposition: attachment` header and
+        an `X-Composition-Id` header identifying the exported composition.
+      operationId: exportTranscript
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Request to export the transcript from a project composition.
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                  description: The ID of the project to export from.
+                  example: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                composition_id:
+                  type: string
+                  description: |
+                    Composition to export. If omitted, the first composition in the project is used.
+
+                    Accepts any of the following formats:
+                    - A full composition UUID (e.g. `39677a40-1c43-4c36-8449-46cfbc4de2b5`)
+                    - A 5-character short ID from a Descript URL (e.g. `39677`)
+                    - A full Descript project URL (e.g. `https://web.descript.com/{project_id}/39677`)
+                  example: 39677a40-1c43-4c36-8449-46cfbc4de2b5
+                format:
+                  type: string
+                  enum:
+                    - txt
+                    - markdown
+                    - html
+                    - rtf
+                    - docx
+                    - srt
+                  description: |
+                    Transcript file format. The response body is the raw transcript file
+                    in the requested format (binary for `docx`, plain text otherwise).
+                    The `srt` format exports a SubRip subtitle file with timed captions.
+                include_speaker_labels:
+                  type: string
+                  enum:
+                    - 'off'
+                    - changes
+                    - every_paragraph
+                  default: changes
+                  description: |
+                    Speaker label mode.
+                    - `off`: No speaker labels
+                    - `changes`: Show speaker label when the speaker changes
+                    - `every_paragraph`: Show speaker label on every paragraph
+                include_markers:
+                  type: boolean
+                  default: false
+                  description: Include markers in the transcript.
+                timecodes:
+                  type: object
+                  description: |
+                    Timecode options. When provided, timecodes are included in
+                    the output.
+                  properties:
+                    frequency_seconds:
+                      type: number
+                      description: Interval in seconds for timecode insertion.
+                    on_paragraphs:
+                      type: boolean
+                      default: false
+                      description: Show timecodes at paragraph breaks.
+                    on_speakers:
+                      type: boolean
+                      default: false
+                      description: Show timecodes at speaker changes.
+                    on_markers:
+                      type: boolean
+                      default: false
+                      description: Show timecodes at markers.
+                    offset_seconds:
+                      type: number
+                      description: Offset in seconds applied to all timecodes.
+                  additionalProperties: false
+              required:
+                - project_id
+                - format
+              additionalProperties: false
+            examples:
+              plain_text_with_speakers:
+                summary: Export as plain text with speaker labels
+                value:
+                  project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                  format: txt
+                  include_speaker_labels: changes
+              markdown_with_timecodes:
+                summary: Export as Markdown with timecodes
+                value:
+                  project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                  format: markdown
+                  include_speaker_labels: every_paragraph
+                  timecodes:
+                    on_paragraphs: true
+              srt_subtitles:
+                summary: Export as SRT subtitles
+                value:
+                  project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                  format: srt
+                  include_speaker_labels: 'off'
+        description: Transcript export request
+        required: true
+      responses:
+        '200':
+          description: |
+            Transcript exported successfully. The response body is the raw
+            transcript file with the appropriate Content-Type for the
+            requested format.
+
+            The `X-Composition-Id` response header contains the composition
+            UUID that was exported.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: Attachment filename, e.g. `attachment; filename="transcript.md"`
+            X-Composition-Id:
+              schema:
+                type: string
+                format: uuid
+              description: The composition ID that was exported
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |-
+                Speaker 1: Hello, welcome to the show.
+
+                Speaker 2: Thanks for having me.
+            text/markdown:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+            application/rtf:
+              schema:
+                type: string
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/x-subrip:
+              schema:
+                type: string
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error403'
         '429':
           $ref: '#/components/responses/Error429Response'
   /jobs:
@@ -1243,6 +1889,12 @@ paths:
                           last_update_at: '2025-11-18T11:01:00Z'
                     pagination:
                       next_cursor: YTFiMmMzZDQtNTY3OC05MGFiLWNkZWYtMTIzNDU2Nzg5MGFi
+        '400':
+          description: Bad request - `project_id` is not a valid UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
         '401':
           description: Unauthorized - invalid or missing authentication token
           content:
@@ -1267,7 +1919,7 @@ paths:
       description: |
         Retrieve the status of any job.
 
-        The response format varies based on job type and includes type-specific fields.
+        The response format varies based on job type and includes type-specific fields. A finished job has `job_state: stopped`. Read `result.status` for the outcome: `success`, or `error` when the job failed. Import jobs can also return `partial`. An individual file inside `result.media_status` uses `failed` when that file did not import.
       operationId: getJob
       parameters:
         - in: path
@@ -1295,7 +1947,7 @@ paths:
                     stopped_at: '2025-11-18T10:35:00Z'
                     drive_id: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
                     project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
-                    project_url: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                    project_url: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb/0171c
                     result:
                       status: success
                       media_status:
@@ -1319,7 +1971,7 @@ paths:
                     stopped_at: '2025-11-18T10:35:00Z'
                     drive_id: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
                     project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
-                    project_url: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                    project_url: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb/0171c
                     result:
                       status: partial
                       media_status:
@@ -1353,6 +2005,20 @@ paths:
                       project_changed: true
                       media_seconds_used: 0
                       ai_credits_used: 150
+                agent_error:
+                  summary: Agent job failed
+                  value:
+                    job_id: 6dc3f30a-58c2-4174-96a6-dc18cf3c7776
+                    job_type: agent
+                    job_state: stopped
+                    created_at: '2025-11-18T10:30:00Z'
+                    stopped_at: '2025-11-18T10:32:00Z'
+                    drive_id: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
+                    project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                    project_url: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                    result:
+                      status: error
+                      error_message: AI agent failed to process the request
                 job_running:
                   summary: Job still running
                   value:
@@ -1386,7 +2052,7 @@ paths:
                     stopped_at: '2025-11-18T10:35:00Z'
                     drive_id: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
                     project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
-                    project_url: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                    project_url: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb/39677
                     result:
                       status: success
                       composition_id: 39677a40-1c43-4c36-8449-46cfbc4de2b5
@@ -1482,7 +2148,7 @@ paths:
                   summary: Job does not exist
                   value:
                     error: not_found
-                    message: Job not found
+                    message: No job found for job_id "6dc3f30a-58c2-4174-96a6-dc18cf3c7776".
         '429':
           $ref: '#/components/responses/Error429Response'
     delete:
@@ -1540,7 +2206,7 @@ paths:
                   summary: Job does not exist
                   value:
                     error: not_found
-                    message: Job not found
+                    message: No job found for job_id "6dc3f30a-58c2-4174-96a6-dc18cf3c7776".
         '429':
           $ref: '#/components/responses/Error429Response'
   /projects:
@@ -1682,6 +2348,10 @@ paths:
                           format: date-time
                           description: When the project was last updated
                           example: '2025-11-19T14:00:00Z'
+                        folder_path:
+                          type: string
+                          description: Full folder path for the project (e.g. "Clients/Acme/Videos"). Absent when the project is at the drive root.
+                          example: Clients/Acme/Videos
                   pagination:
                     type: object
                     properties:
@@ -1702,13 +2372,16 @@ paths:
         - API Endpoints
       summary: Get project details
       description: |
-        Get a detailed project summary including all media files and compositions.
+        Get a detailed project summary including all media files, compositions,
+        and existing publishes.
 
         Returns the project's id, name, drive_id, a map of media files (keyed by
-        display path) with type and duration, and a list of compositions with id,
-        name, duration, and media type.
+        display path) with type and duration, a list of compositions with id,
+        name, duration, and media type, and a list of successfully published
+        share pages with their URLs, access levels, and publish times.
 
-        Use this to inspect a project's contents before editing or importing media.
+        Use this to inspect a project's contents before editing or importing media,
+        or to retrieve existing share URLs without triggering a republish.
       operationId: getProject
       security:
         - bearerAuth: []
@@ -1735,6 +2408,7 @@ paths:
                   - updated_at
                   - media_files
                   - compositions
+                  - publishes
                 properties:
                   id:
                     type: string
@@ -1755,6 +2429,10 @@ paths:
                     type: string
                     format: date-time
                     description: When the project was last updated (ISO 8601)
+                  folder_path:
+                    type: string
+                    description: Full folder path for the project (e.g. "Clients/Acme/Videos"). Absent when the project is at the drive root.
+                    example: Clients/Acme/Videos
                   media_files:
                     type: object
                     description: Map of display path to media file info
@@ -1799,6 +2477,62 @@ paths:
                         media_type:
                           type: string
                           description: Media type of the composition
+                  publishes:
+                    type: array
+                    description: Successfully published share pages for this project. Each entry represents a composition that has been published and is accessible via its share_url.
+                    items:
+                      type: object
+                      required:
+                        - share_url
+                        - composition_id
+                        - access_level
+                        - media_type
+                        - published_at
+                        - updated_at
+                        - name
+                      properties:
+                        share_url:
+                          type: string
+                          format: uri
+                          description: URL of the published share page
+                          example: https://share.descript.com/view/abc123
+                        composition_id:
+                          type: string
+                          format: uuid
+                          description: ID of the composition that was published
+                        access_level:
+                          type: string
+                          enum:
+                            - public
+                            - unlisted
+                            - drive
+                            - private
+                            - password
+                          description: Access level of the published share page
+                        media_type:
+                          type: string
+                          enum:
+                            - video
+                            - audio
+                            - audiogram
+                          description: Media type of the published output
+                        published_at:
+                          type: string
+                          format: date-time
+                          description: When the publish was created (ISO 8601)
+                        updated_at:
+                          type: string
+                          format: date-time
+                          description: When the publish was last updated (ISO 8601)
+                        name:
+                          type: string
+                          description: Name of the published share page
+        '400':
+          description: Bad request - `project_id` is not a valid UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
         '401':
           description: Unauthorized - invalid or missing authentication token
           content:
@@ -1819,6 +2553,226 @@ paths:
                 $ref: '#/components/schemas/Error404'
         '429':
           $ref: '#/components/responses/Error429Response'
+  /search:
+    get:
+      tags:
+        - API Endpoints
+      summary: Search a drive
+      description: |
+        Search the drive tied to the personal API token. Matches project names,
+        folder names, layout pack names, media file names, composition text,
+        and transcripts across projects, the drive media library, and Brand
+        Studio. On drives with the Enterprise plan, also allows searches for visual matches.
+        Returns up to 100 results.
+      operationId: search
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          description: |
+            Search term. Matched against names, contents, and visual matches
+            (on drives with the Enterprise plan). Must be non-empty.
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          example: quarterly update
+        - in: query
+          name: updated_after
+          description: |
+            Return results updated at or after this time. Accepts an ISO 8601
+            date (`2026-08-01`, interpreted as the start of that UTC day) or
+            timestamp (`2026-08-01T09:30:00Z`). Values without a timezone
+            offset are read as UTC.
+          required: false
+          schema:
+            type: string
+            format: date-time
+          example: '2026-08-01T00:00:00Z'
+        - in: query
+          name: updated_before
+          description: |
+            Return results updated at or before this time. Accepts an ISO 8601
+            date (`2026-08-01`, interpreted as the end of that UTC day) or
+            timestamp (`2026-08-01T23:59:59Z`). Values without a timezone
+            offset are read as UTC.
+          required: false
+          schema:
+            type: string
+            format: date-time
+          example: '2026-08-31T23:59:59Z'
+        - in: query
+          name: owner
+          description: |
+            Return items owned by these user UUIDs. Repeat this parameter to
+            include more than one owner. If omitted, results from all owners
+            are returned.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          example:
+            - 3fa85f64-5717-4562-b3fc-2c963f66afa6
+        - in: query
+          name: type
+          description: |
+            Result types to search. Repeat this parameter to search more than
+            one type. If omitted, all result types are returned.
+
+            - `project`: Projects
+            - `layout_pack`: Layout packs
+            - `project_folder`: Folders that hold projects
+            - `media_library_folder`: Folders in the drive media library
+            - `video`, `image`, `audio`: Files of that media type in the drive
+               media library, Brand Studio, and inside projects
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - project
+                - video
+                - image
+                - audio
+                - project_folder
+                - media_library_folder
+                - layout_pack
+          example:
+            - project
+            - media_library_folder
+        - in: query
+          name: match
+          description: |
+            How the query may match. Repeat this parameter to allow more than
+            one kind. `name` matches project, file, folder, and layout pack
+            names. `content` matches transcripts and composition text.
+            `visual` matches what appears in videos and images, and is only
+            available on drives with the Enterprise plan. `visual` cannot be combined
+            with another match kind. If omitted, only names and contents contribute.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - name
+                - content
+                - visual
+          example:
+            - content
+        - in: query
+          name: sort
+          description: |
+            How to sort results:
+
+            - `relevance`: closest matches first. This is the default.
+            - `newest`: most recently modified first.
+            - `oldest`: least recently modified first.
+          required: false
+          schema:
+            type: string
+            enum:
+              - relevance
+              - newest
+              - oldest
+            default: relevance
+          example: newest
+        - in: query
+          name: limit
+          description: |
+            Maximum number of results to return. Defaults to 30. Maximum is
+            100.
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 30
+          example: 30
+      responses:
+        '200':
+          description: Search completed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              examples:
+                mixed:
+                  summary: A project hit and a media-library file hit
+                  value:
+                    results:
+                      - type: project
+                        project_id: 9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
+                        name: Quarterly update
+                        owner:
+                          id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                          name: Ada Lovelace
+                        updated_at: '2026-08-15T14:00:00.000Z'
+                      - type: video
+                        asset_id: 6dc3f30a-58c2-4174-96a6-dc18cf3c7776
+                        name: standup.mp4
+                        location: media_library
+                        owner:
+                          id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                          name: Ada Lovelace
+                        updated_at: '2026-08-12T09:30:00.000Z'
+                        duration: 184.5
+                brand_studio:
+                  summary: A media file in Brand Studio
+                  value:
+                    results:
+                      - type: image
+                        asset_id: 6dc3f30a-58c2-4174-96a6-dc18cf3c7776
+                        brand_studio_id: 7c1e2a90-4b3d-4f6a-9c8e-1a2b3c4d5e6f
+                        name: logo.png
+                        location: brand_studio
+                        owner:
+                          id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                          name: Ada Lovelace
+                        updated_at: '2026-08-12T09:30:00.000Z'
+        '400':
+          description: The query is missing or the token is not associated with a drive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error400'
+        '401':
+          description: The personal API token is missing or invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error401'
+        '403':
+          description: |
+            Visual search (`match=visual`) is not enabled for the drive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error403'
+              examples:
+                visual_search_unavailable:
+                  summary: Visual search is unavailable for the drive
+                  value:
+                    error: Forbidden
+                    message: Visual search is not available for this drive
+        '404':
+          description: The search endpoint is not enabled for the authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error404'
+        '429':
+          $ref: '#/components/responses/Error429Response'
   /status:
     get:
       tags:
@@ -1827,15 +2781,14 @@ paths:
       security:
         - bearerAuth: []
       description: |
-        > **Work in progress** — This endpoint is not yet available and will return an error if called.
-
         Check API availability and validate authentication token.
 
         This endpoint can be used to:
         - Verify that your authentication token is valid
         - Check API connectivity without performing any heavy operations
+        - Identify which drive (workspace) your token is connected to
 
-        Returns a success response if the token is valid, or a 401 error if the token is invalid or missing.
+        Returns the connected drive ID and name, plus the API version.
       operationId: getStatus
       responses:
         '200':
@@ -1845,19 +2798,38 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
+                  drive_id:
                     type: string
-                    enum:
-                      - ok
-                    description: API status indicator
-                    example: ok
+                    format: uuid
+                    nullable: true
+                    description: The drive ID associated with the authentication token, or null if the token has no associated drive
+                    example: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
+                  drive_name:
+                    type: string
+                    nullable: true
+                    description: Human-readable name of the connected drive (workspace), or null if unavailable
+                    example: My Team Workspace
+                  api_version:
+                    type: string
+                    description: Current API version
+                    example: '1.2'
                 required:
-                  - status
+                  - drive_id
+                  - drive_name
+                  - api_version
               examples:
                 success:
-                  summary: Successful status check
+                  summary: Successful status check with drive
                   value:
-                    status: ok
+                    drive_id: c9c5c47e-158a-49f7-846b-4f6ee2a229a2
+                    drive_name: My Team Workspace
+                    api_version: '1.2'
+                no_drive:
+                  summary: Token without associated drive
+                  value:
+                    drive_id: null
+                    drive_name: null
+                    api_version: '1.2'
         '401':
           description: Unauthorized - missing or invalid authentication token
           content:
@@ -2084,6 +3056,263 @@ components:
       required:
         - error
         - message
+    SearchResponse:
+      type: object
+      description: Ranked search results.
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          description: Search results ranked by relevance, best match first.
+          items:
+            oneOf:
+              - type: object
+                title: Project search result
+                description: A project matched.
+                required:
+                  - type
+                  - project_id
+                  - name
+                  - updated_at
+                  - url
+                properties:
+                  type:
+                    type: string
+                    description: Always `project` for a project result.
+                    enum:
+                      - project
+                  project_id:
+                    type: string
+                    format: uuid
+                    description: |
+                      ID of the project. Endpoints that take a
+                      `project_id` accept it.
+                  name:
+                    type: string
+                    description: Name of the project.
+                  url:
+                    type: string
+                    format: uri
+                    description: Link that opens this project in Descript.
+                  owner:
+                    $ref: '#/components/schemas/SearchOwner'
+                  updated_at:
+                    type: string
+                    format: date-time
+                    description: |
+                      When the project was last modified. This is the
+                      field `updated_after` and `updated_before` filter
+                      on.
+              - type: object
+                title: Media search result
+                description: |
+                  A video, audio, or image file in the drive media library,
+                  Brand Studio, or a project.
+                required:
+                  - type
+                  - asset_id
+                  - name
+                  - location
+                  - updated_at
+                  - url
+                properties:
+                  type:
+                    type: string
+                    description: |
+                      The kind of media: `video`, `audio`, or `image`.
+                    enum:
+                      - video
+                      - image
+                      - audio
+                  asset_id:
+                    type: string
+                    format: uuid
+                    description: ID of the file. Endpoints that take an `asset_id` accept it.
+                  project_id:
+                    type: string
+                    format: uuid
+                    description: |
+                      ID of the project that contains the file. Present
+                      only when `location` is `project`.
+                  brand_studio_id:
+                    type: string
+                    format: uuid
+                    description: |
+                      ID of the Brand Studio that contains the file.
+                      Present only when `location` is `brand_studio`.
+                  name:
+                    type: string
+                    description: File name of the media file.
+                  location:
+                    type: string
+                    description: |
+                      Where the file lives: `media_library` in the drive
+                      media library, `project` inside a project, or
+                      `brand_studio` in Brand Studio.
+                    enum:
+                      - media_library
+                      - project
+                      - brand_studio
+                  url:
+                    type: string
+                    format: uri
+                    description: |
+                      Link that opens this file in Descript. Files
+                      inside a project open that project with the file
+                      highlighted.
+                  thumbnail_url:
+                    type: string
+                    format: uri
+                    description: |
+                      Time-limited signed URL of a preview image for
+                      video and image files. Omitted for audio and when
+                      a thumbnail is unavailable.
+                  owner:
+                    $ref: '#/components/schemas/SearchOwner'
+                  updated_at:
+                    type: string
+                    format: date-time
+                    description: |
+                      When the file was last modified. This is the
+                      field `updated_after` and `updated_before` filter
+                      on.
+                  duration:
+                    type: number
+                    description: |
+                      Playback length of the file in seconds. Omitted
+                      for images and for files with no duration.
+                  moment:
+                    type: object
+                    description: |
+                      The time range of the best match for a visual search.
+                      Present only on visual video matches. The time range is
+                      represented by `start_time_sec` and `end_time_sec`, in seconds.
+                      Omitted for images, and non-visual searches.
+                    properties:
+                      start_time_sec:
+                        type: number
+                        description: |
+                          Start of the matched time range, in seconds.
+                      end_time_sec:
+                        type: number
+                        description: |
+                          End of the matched time range, in seconds.
+              - type: object
+                title: Layout pack search result
+                description: A layout pack matched.
+                required:
+                  - type
+                  - project_id
+                  - name
+                  - updated_at
+                  - url
+                properties:
+                  type:
+                    type: string
+                    description: Always `layout_pack` for a layout pack result.
+                    enum:
+                      - layout_pack
+                  project_id:
+                    type: string
+                    format: uuid
+                    description: ID of the layout pack.
+                  name:
+                    type: string
+                    description: Name of the layout pack.
+                  url:
+                    type: string
+                    format: uri
+                    description: Link that opens this layout pack in Descript.
+                  owner:
+                    $ref: '#/components/schemas/SearchOwner'
+                  updated_at:
+                    type: string
+                    format: date-time
+                    description: |
+                      When the layout pack was last modified. This is
+                      the field `updated_after` and `updated_before`
+                      filter on.
+              - type: object
+                title: Project folder search result
+                description: A folder that holds projects.
+                required:
+                  - type
+                  - folder_id
+                  - name
+                  - updated_at
+                  - url
+                properties:
+                  type:
+                    type: string
+                    description: Always `project_folder`. The folder holds projects.
+                    enum:
+                      - project_folder
+                  folder_id:
+                    type: string
+                    format: uuid
+                    description: ID of the folder.
+                  name:
+                    type: string
+                    description: Name of the folder.
+                  url:
+                    type: string
+                    format: uri
+                    description: Link that opens this project folder in Descript.
+                  owner:
+                    $ref: '#/components/schemas/SearchOwner'
+                  updated_at:
+                    type: string
+                    format: date-time
+                    description: |
+                      When the folder was last modified. This is the
+                      field `updated_after` and `updated_before` filter
+                      on.
+              - type: object
+                title: Media library folder search result
+                description: A folder in the drive media library.
+                required:
+                  - type
+                  - folder_id
+                  - name
+                  - location
+                  - updated_at
+                  - url
+                properties:
+                  type:
+                    type: string
+                    description: |
+                      Always `media_library_folder`. The folder holds
+                      media library files.
+                    enum:
+                      - media_library_folder
+                  folder_id:
+                    type: string
+                    format: uuid
+                    description: ID of the folder.
+                  name:
+                    type: string
+                    description: Name of the folder.
+                  location:
+                    type: string
+                    description: Always `media_library` for a media-library folder.
+                    enum:
+                      - media_library
+                  url:
+                    type: string
+                    format: uri
+                    description: |
+                      Link that opens this media library folder in
+                      Descript.
+                  owner:
+                    $ref: '#/components/schemas/SearchOwner'
+                  updated_at:
+                    type: string
+                    format: date-time
+                    description: |
+                      When the folder was last modified. This is the
+                      field `updated_after` and `updated_before` filter
+                      on.
     EditInDescriptSchemaPostBody:
       type: object
       properties:
@@ -2440,7 +3669,7 @@ components:
         project_url:
           type: string
           format: uri
-          description: URL to access the project in Descript web app
+          description: URL to access the project in Descript web app. When a composition ID is available in the result, the URL includes a composition short ID suffix.
           example: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
         progress:
           type: object
@@ -2507,6 +3736,22 @@ components:
           type: integer
           description: AI credits consumed by this operation
           example: 5
+        resolved_model:
+          type: string
+          description: |
+            Model reported for this job: the canonical id for an explicit model or
+            alias (e.g. `claude-opus-5.5` for `claude-opus`), `auto` for an `auto`
+            request, or `inherited` when a resume keeps the conversation's model.
+            Present on jobs submitted via the public API after the model-aliases
+            launch; older jobs may omit it.
+          example: claude-opus-5.5
+        conversation_id:
+          type: string
+          format: uuid
+          description: |
+            Conversation ID for this agent session. Pass this value as `conversation_id` in a
+            subsequent [POST /jobs/agent](#operation/agentEditJob) request to continue the conversation.
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
       required:
         - status
         - agent_response
@@ -2520,7 +3765,9 @@ components:
           type: string
           enum:
             - error
-          description: Indicates the job failed
+          description: |
+            The string `error`. A stopped agent job with this status did not complete.
+            Read `error_message` for what went wrong.
           example: error
         error_message:
           type: string
@@ -2530,6 +3777,20 @@ components:
           type: string
           description: Machine-readable error code
           example: agent_execution_failed
+        resolved_model:
+          type: string
+          description: |
+            Model reported for this job: the canonical id for an explicit model or
+            alias, `auto` for an `auto` request, or `inherited` when a resume keeps
+            the conversation's model. Present on jobs submitted via the public API
+            after the model-aliases launch; older jobs may omit it.
+          example: claude-opus-5.5
+        conversation_id:
+          type: string
+          format: uuid
+          description: |
+            Conversation ID for this agent session, if one was created before the error occurred.
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
       required:
         - status
         - error_message
@@ -2585,7 +3846,7 @@ components:
         project_url:
           type: string
           format: uri
-          description: URL to access the project in Descript web app
+          description: URL to access the project in Descript web app. When a composition ID is available in the result, the URL includes a composition short ID suffix.
           example: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
         progress:
           type: object
@@ -2642,6 +3903,14 @@ components:
           format: uri
           description: Public URL to view the published content
           example: https://share.descript.com/view/abc123
+        media_type:
+          type: string
+          enum:
+            - Video
+            - Audio
+          description: |
+            The media type the composition was actually published as. For an audio-only composition published with the default Video request, this is Audio.
+          example: Audio
         download_url:
           type: string
           format: uri
@@ -2723,7 +3992,7 @@ components:
         project_url:
           type: string
           format: uri
-          description: URL to access the project in Descript web app
+          description: URL to access the project in Descript web app. When a composition ID is available in the result, the URL includes a composition short ID suffix.
           example: https://web.descript.com/9f36ee32-5a2c-47e7-b1a3-94991d3e3ddb
         progress:
           type: object
@@ -2782,9 +4051,24 @@ components:
           import/project_media: '#/components/schemas/ImportJobStatus'
           agent: '#/components/schemas/AgentJobStatus'
           publish: '#/components/schemas/PublishJobStatus'
+          export/timeline: '#/components/schemas/TimelineExportJobStatus'
       description: |
         Status of an async job. The response structure varies based on the job type.
         Use the `job_type` field to determine which fields will be present.
+    SearchOwner:
+      type: object
+      description: Owner of the search result. Omitted when the owner is unavailable.
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User ID of the owner.
+        name:
+          type: string
+          description: Display name of the owner.
   responses:
     Error429Response:
       description: |
@@ -2817,7 +4101,7 @@ components:
                 error: rate_limit_exceeded
                 message: Too many requests. Please try again later.
 x-tagGroups:
-  - name: Early Access Public API
+  - name: Public API
     tags:
       - Getting started
       - Using the CLI

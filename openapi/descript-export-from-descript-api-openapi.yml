@@ -13,7 +13,28 @@ servers:
 - url: https://descriptapi.com/v1
 tags:
 - name: Export from Descript
-  description: Users of Descript currently have three options to export their edited content.
+  description: 'Users of Descript currently have three options to export their edited content. They can export files in various
+
+    formats, share a Descript link, or use our one-click cloud export
+
+    to publish directly to a partner.
+
+
+    ### Roundtrip Metadata
+
+    If Project data previously came from a partner via an Edit in Descript schema then any Descript Export pages
+
+    will include `` tags which contains the `partner_drive_id` and `source_id` provided when originally
+
+    importing into Descript. This allows partners to deduplicate data returning back to partner systems after
+
+    editing in Descript. Both partner and source properties are included on all public Descript Export pages.
+
+
+    ```
+
+
+    ```'
 paths:
   /published_projects/{publishedProjectSlug}:
     get:
@@ -73,6 +94,59 @@ paths:
           $ref: '#/components/responses/Error429Response'
 components:
   schemas:
+    PublishedProjectForbiddenError:
+      type: object
+      description: Error response when the user does not have access to the published project
+      properties:
+        error:
+          type: string
+          enum:
+          - forbidden
+          description: Error type identifier
+          example: forbidden
+        message:
+          type: string
+          description: Human-readable error message
+          example: User id 00000000-0000-0000-0000-000000000000 does not have access to this project
+    PublishedProjectPrivateError:
+      type: object
+      description: Error response when published project is private to drive and user is unauthenticated
+      properties:
+        error:
+          type: string
+          enum:
+          - unauthorized
+          description: Error type identifier
+          example: unauthorized
+        message:
+          type: string
+          description: Human-readable error message
+          example: Private to drive, user must log in to account with access.
+    Error429:
+      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
+
+        to help you implement proper retry logic:
+
+        - `Retry-After`: Number of seconds to wait before retrying
+
+        - `X-RateLimit-Remaining`: Requests remaining in current window
+
+        - `X-RateLimit-Consumed`: Requests consumed in current window
+
+        '
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code indicating rate limit was exceeded
+          example: rate_limit_exceeded
+        message:
+          type: string
+          description: Human-readable error message
+          example: Too many requests
+      required:
+      - error
+      - message
     PublishedProjectConflictError:
       type: object
       description: Error response when published project is in an invalid state
@@ -197,59 +271,6 @@ components:
       required:
       - error
       - message
-    PublishedProjectPrivateError:
-      type: object
-      description: Error response when published project is private to drive and user is unauthenticated
-      properties:
-        error:
-          type: string
-          enum:
-          - unauthorized
-          description: Error type identifier
-          example: unauthorized
-        message:
-          type: string
-          description: Human-readable error message
-          example: Private to drive, user must log in to account with access.
-    PublishedProjectForbiddenError:
-      type: object
-      description: Error response when the user does not have access to the published project
-      properties:
-        error:
-          type: string
-          enum:
-          - forbidden
-          description: Error type identifier
-          example: forbidden
-        message:
-          type: string
-          description: Human-readable error message
-          example: User id 00000000-0000-0000-0000-000000000000 does not have access to this project
-    Error429:
-      description: 'Rate limit exceeded response. When this error is returned, the response includes headers
-
-        to help you implement proper retry logic:
-
-        - `Retry-After`: Number of seconds to wait before retrying
-
-        - `X-RateLimit-Remaining`: Requests remaining in current window
-
-        - `X-RateLimit-Consumed`: Requests consumed in current window
-
-        '
-      type: object
-      properties:
-        error:
-          type: string
-          description: Error code indicating rate limit was exceeded
-          example: rate_limit_exceeded
-        message:
-          type: string
-          description: Human-readable error message
-          example: Too many requests
-      required:
-      - error
-      - message
   responses:
     Error429Response:
       description: 'Too many requests - rate limit exceeded.
@@ -289,7 +310,7 @@ components:
       scheme: bearer
       description: Personal API token created in Descript Settings → API Tokens. See the Authentication section for details.
 x-tagGroups:
-- name: Early Access Public API
+- name: Public API
   tags:
   - Getting started
   - Using the CLI
