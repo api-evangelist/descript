@@ -241,6 +241,8 @@ apis:
   - type: CLI
     url: https://www.npmjs.com/package/@descript/platform-cli
 common:
+  - type: PostmanWorkspace
+    url: https://www.postman.com/kinlaneapi/descript/overview
   - type: FinOps
     url: finops/descript-finops.yml
   - type: Website
