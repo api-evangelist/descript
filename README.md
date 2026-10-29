@@ -1,4 +1,4 @@
-# Descript (descript)
+# Descript
 
 <!-- API-EVANGELIST-PROVENANCE:BEGIN -->
 > ### About this repository
@@ -66,88 +66,130 @@
 
 Descript is an AI-powered video and audio editing platform. Descript's API lets you programmatically create projects, import media, run AI ("Underlord") edits, publish compositions, and export transcripts — all without opening the desktop app. The API surfaces the same job model that backs the desktop editor and is currently in early access.
 
-**APIs.json:** [https://raw.githubusercontent.com/api-evangelist/descript/refs/heads/main/apis.yml](https://raw.githubusercontent.com/api-evangelist/descript/refs/heads/main/apis.yml)
+**Areas:** Artificial Intelligence · Audio Editing · Captions · Media · Podcasts · Transcription · Video Editing · Audio
 
-## Scope
+## Descript on APIs.io
 
-- **Type:** Index
-- **Access:** 3rd-Party
+Everything profiled for Descript is published on APIs.io rather than in this repository. Start at the provider page — **[apis.io/providers/descript/](https://apis.io/providers/descript/)** — or go straight to one of the APIs or properties below.
 
-## Tags
+### APIs (3)
 
-- AI
-- Audio Editing
-- Captions
-- Media
-- Podcasting
-- Transcription
-- Video Editing
+- [Descript API Endpoints API](https://apis.io/apis/descript/descript-api-endpoints-api/) — Import media, edit projects with AI, and query jobs and projects.
+- [Descript Edit in Descript API](https://apis.io/apis/descript/descript-edit-in-descript-api/) — > **Note:** The Edit in Descript integration requires contacting Descript for access. [Reach out to us](https://descript.com/api) to get started. Edit in…
+- [Descript Export from Descript API](https://apis.io/apis/descript/descript-export-from-descript-api/) — Users of Descript currently have three options to export their edited content. They can export files in various formats, share a Descript link, or use our…
 
-## Timestamps
+### Published properties
 
-- **Created:** 2026-05-06
-- **Modified:** 2026-05-19
+Each property below is a page on APIs.io carrying the machine-readable artifact and what it says.
 
-## APIs
+#### Agentic access (1)
 
-### Descript Platform API
+Which operations an agent can call, which act, and which need a human in the loop.
 
-REST API for programmatically creating projects, importing media, running AI edits via the Underlord agent, publishing compositions, exporting transcripts, and managing asynchronous jobs in a Descript Drive. Authenticated with a personal Bearer API token scoped to a single Drive.
+- [Descript Agentic Access](https://apis.io/agentic-access/descript/descript-agentic-access/)
 
-- **Human URL:** [https://docs.descriptapi.com/](https://docs.descriptapi.com/)
-- **Base URL:** `https://descriptapi.com/v1`
+#### Collections (4)
 
-#### Tags
+Postman and Open Collection request collections.
 
-- AI
-- Audio Editing
-- Jobs
-- Media
-- Projects
-- Publishing
-- Transcription
-- Video Editing
+- [Descript API](https://apis.io/collections/descript/open-descript/)
+- [Descript API Endpoints API](https://apis.io/collections/descript/open-descript-api-endpoints-api/)
+- [Descript API Endpoints Edit in Descript API](https://apis.io/collections/descript/open-descript-edit-in-descript-api/)
+- [Descript API Endpoints Export from Descript API](https://apis.io/collections/descript/open-descript-export-from-descript-api/)
 
-#### Properties
+#### Security (4)
 
+Authentication, trust centre, and vulnerability disclosure.
+
+- [Descript Authentication](https://apis.io/security/descript/descript-authentication/)
+- [Descript Domain Security](https://apis.io/security/descript/descript-domain-security/)
+- [Descript Trust Center](https://apis.io/security/descript/descript-trust-center/)
+- [Descript Vulnerability Disclosure](https://apis.io/security/descript/descript-vulnerability-disclosure/)
+
+#### Plans and pricing (1)
+
+Published plans, tiers and prices.
+
+- [Descript Plans Pricing](https://apis.io/plans/descript/descript-plans-pricing/)
+
+#### Rate limits (1)
+
+Published request limits.
+
+- [Descript Rate Limits](https://apis.io/rate-limits/descript/descript-rate-limits/)
+
+#### FinOps (1)
+
+What the API costs to run, by operation.
+
+- [Descript Finops](https://apis.io/finops/descript/descript-finops/)
+
+## Where to find this API
+
+Links to the company's own pages. This repository publishes no copy of their specifications — the canonical document is theirs and lives at the URLs below.
+
+- [Website](https://www.descript.com/)
 - [Documentation](https://docs.descriptapi.com/)
-- [API Reference](https://docs.descriptapi.com/openapi-experimental.html)
-- [OpenAPI](openapi/descript-openapi.yml) — [OpenAPI Specification](https://spec.openapis.org/oas/latest.html)
-- [Postman Collection](collections/descript.postman_collection.json) — [Postman Collection 2.1](https://schema.getpostman.com/json/collection/v2.1.0/collection.json)
-- [Open Collection](collections/descript.opencollection.json) — [Open Collection 1.0](https://schema.opencollection.com/opencollection/v1.0.0.json)
-- [Authentication](https://docs.descriptapi.com/#section/Authentication)
-- [Rate Limits](https://docs.descriptapi.com/#section/Rate-Limiting)
-- [Getting Started](https://docs.descriptapi.com/#tag/Getting-started)
-- [C L I](https://www.npmjs.com/package/@descript/platform-cli)
-
-## Common Properties
-
-- [LinkedIn](https://www.linkedin.com/company/descript)
-- [Portal](https://www.descript.com/api)
-- [Documentation](https://docs.descriptapi.com/)
-- [API Reference](https://docs.descriptapi.com/openapi-experimental.html)
-- [Sign Up](https://web.descript.com/signup)
-- [Login](https://web.descript.com/login)
+- [API reference](https://docs.descriptapi.com/openapi-experimental.html)
 - [Pricing](https://www.descript.com/pricing)
-- [Plans](plans/descript-plans-pricing.yml)
-- [Rate Limits](rate-limits/descript-rate-limits.yml)
-- [Resources](finops/descript-finops.yml)
-- [C L I](https://www.npmjs.com/package/@descript/platform-cli)
 - [Support](https://help.descript.com/)
-- [Knowledge Center](https://help.descript.com/)
 - [Blog](https://www.descript.com/blog)
-- [YouTube](https://www.youtube.com/@descriptapp)
-- [Terms of Service](https://www.descript.com/terms)
-- [Privacy Policy](https://www.descript.com/privacy)
 - [Security](https://www.descript.com/security)
-- [GitHub Organization](https://github.com/descriptinc)
-- [Features](undefined)
-- [Use Cases](undefined)
-- [Integrations](undefined)
-- [Compliance](undefined)
-- [Integrations](https://www.descript.com/integrations)
+- [Terms of service](https://www.descript.com/terms)
+- [Privacy policy](https://www.descript.com/privacy)
+- [GitHub](https://github.com/descriptinc)
 
-## Maintainers
+## API Evangelist rating
 
-**FN:** Kin Lane
-**Email:** kin@apievangelist.com
+**Kin Score 45.9** — developing · rubric 0.25.0 · scored 2026-10-23
+
+| Facet | Score |
+|---|---|
+| Discoverability | 66.1 |
+| Contract quality | 49.7 |
+| Contract governance | 0.0 |
+| Operational transparency | 21.1 |
+| Developer ergonomics | 52.4 |
+| Access clarity | 61.8 |
+
+**Agent readiness 36.0** — agent-ready
+
+| Agent-readiness dimension | Result |
+|---|---|
+| Spec Presence | yes |
+| Agentic Access | derived (partial credit) |
+| Reversibility Documented | documented (partial credit) |
+| MCP Server | — |
+| Auth Clarity | bearer (partial credit) |
+| Idempotency | — |
+| Error Semantics | verified |
+| OpenAPI Examples | partial |
+| Rate Limit Signal | verified |
+| Event Surface Described | — |
+| Agent Skills | — |
+| Well Known Catalog | — |
+| Consent Identity | — |
+| Agent Card | — |
+| Dry Run Mode | — |
+| Delegated Identity | — |
+| Protected Resource Metadata | — |
+| Dynamic Client Registration | — |
+| Agentic Commerce | — |
+| Pagination Ratio | paginated |
+| Operation Distinctiveness | distinct |
+
+**Regulatory alignment 28.2** — Horizontal (data, software, accessibility, platform)
+
+The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/descript/](https://apis.io/providers/descript/).
+
+## How this profile is made
+
+API Evangelist profiles a company's public API surface the way a developer would find it: the website, developer portal and documentation, the specifications it publishes, its public repositories, and its pricing, status and changelog pages. From that it derives the properties above — contracts split per API, workflows, schemas, collections, governance rules, plans and rate limits — and scores them against the published [Kin Score rubric](https://github.com/api-evangelist/kin-score).
+
+The artifacts are published on [APIs.io](https://apis.io), not in this repository. This repository is the public record for Descript: the place to say something is wrong, missing or out of date, and to ask for a re-score or a removal.
+
+## Open an issue
+
+- **Something about this listing** — a wrong description, a missing API, a stale artifact or a question about the rating: [open an issue on this repository](https://github.com/api-evangelist/descript/issues/new).
+- **A new API, or one that is not in the catalog yet** — [submit it on APIs.io](https://apis.io/add/).
+- **Anything else** — [the APIs.io inbox](https://github.com/api-search/inbox/issues/new) or [info@apievangelist.com](mailto:info@apievangelist.com).
